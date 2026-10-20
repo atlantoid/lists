@@ -1,0 +1,1797 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B7A5E">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>:root{color-scheme:light}body{margin:0;font:14px/1.4 system-ui,sans-serif}[hidden]{display:none!important}img{max-width:100%}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+<title>Lists</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Figtree:wght@400;500;600&display=swap">
+<style>
+/* Layout: one phone-width column. Sticky title bar on top, rows in the middle, one fixed bar at the bottom (add, or selection actions). */
+:root {
+  --bg: #EEF2F0;
+  --surface: #FFFFFF;
+  --ink: #14201D;
+  --muted: #5C6B67;
+  --line: #D3DCD8;
+  --accent: #0B7A5E;
+  --accent-ink: #FFFFFF;
+  --picked: #D2D9D6;
+  --star: #DE9C00;
+  --unstar: #5C6B67;
+  --add-ink: #1B1400;
+  --del: #CC332B; --on-del: #FFFFFF;  /* the same deep red in both themes */
+  --danger: #B3261E;
+  --shadow: 0 8px 24px rgba(20, 32, 29, .18);
+  --scrim: rgba(20, 32, 29, .38);
+  --display: "Bricolage Grotesque", "Figtree", system-ui, sans-serif;
+  --body: "Figtree", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F1514; --surface: #182120; --ink: #E7EEEB; --muted: #94A39E; --line: #2C3836;
+    --accent: #45CFA2; --accent-ink: #06261C; --picked: #36423F; --star: #F4C54A; --unstar: #FFFFFF; --danger: #FF8A80;
+    --shadow: 0 8px 24px rgba(0, 0, 0, .5); --scrim: rgba(0, 0, 0, .55);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F1514; --surface: #182120; --ink: #E7EEEB; --muted: #94A39E; --line: #2C3836;
+  --accent: #45CFA2; --accent-ink: #06261C; --picked: #36423F; --star: #F4C54A; --unstar: #FFFFFF; --danger: #FF8A80;
+  --shadow: 0 8px 24px rgba(0, 0, 0, .5); --scrim: rgba(0, 0, 0, .55);
+  color-scheme: dark;
+}
+/* The app's own Theme setting: "Phone setting" leaves the blocks above in charge; Light or Dark overrides them. */
+:root[data-app-theme="light"] {
+  --bg: #EEF2F0; --surface: #FFFFFF; --ink: #14201D; --muted: #5C6B67; --line: #D3DCD8;
+  --accent: #0B7A5E; --accent-ink: #FFFFFF; --picked: #D2D9D6; --star: #DE9C00; --unstar: #5C6B67; --danger: #B3261E;
+  --shadow: 0 8px 24px rgba(20, 32, 29, .18); --scrim: rgba(20, 32, 29, .38);
+  color-scheme: light;
+}
+:root[data-app-theme="dark"] {
+  --bg: #0F1514; --surface: #182120; --ink: #E7EEEB; --muted: #94A39E; --line: #2C3836;
+  --accent: #45CFA2; --accent-ink: #06261C; --picked: #36423F; --star: #F4C54A; --unstar: #FFFFFF; --danger: #FF8A80;
+  --shadow: 0 8px 24px rgba(0, 0, 0, .5); --scrim: rgba(0, 0, 0, .55);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--body); font-size: 16px; line-height: 1.4;
+  -webkit-tap-highlight-color: transparent;
+}
+button, input { font: inherit; color: inherit; }
+button { background: none; border: 0; padding: 0; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.wrap { max-width: 640px; margin-inline: auto; padding-inline: 16px; padding-block: 0 150px; }
+
+/* Title bar */
+.top {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--bg);
+  display: flex; align-items: center; gap: 8px;
+  padding-block: 14px 10px;
+}
+.top h1 { margin: 0; flex: 1; min-width: 0; font: 700 18px/1.15 var(--display); letter-spacing: -.01em; }
+#title {
+  display: block; width: 100%; max-width: 100%; text-align: left; font: inherit; letter-spacing: inherit;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-radius: 6px;
+}
+#title:disabled { cursor: default; color: var(--ink); }
+#title:not(:disabled) { color: var(--accent); font-weight: 600; }
+#titleInput {
+  flex: 1; min-width: 0; font: 600 18px/1.15 var(--display);
+  background: var(--surface); border: 1.5px solid var(--accent); border-radius: 8px; padding: 6px 10px;
+}
+.chip {
+  min-height: 40px; padding: 0 14px; border-radius: 20px; font-weight: 600; font-size: 15px;
+  border: 1.5px solid var(--line); background: var(--surface); white-space: nowrap;
+}
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.chip:disabled { opacity: .45; cursor: default; }
+.chip.danger { color: var(--danger); }
+.chip.solid-danger { background: var(--danger); border-color: var(--danger); color: var(--surface); }
+#back, #menuBtn { width: 40px; padding: 0; display: grid; place-items: center; border: 1.5px solid color-mix(in srgb, var(--muted) 42%, transparent); }
+#back, #menuBtn { background: color-mix(in srgb, var(--surface) 90%, white); }
+#back { width: 54px; margin-right: 4px; }
+
+body.typing .wrap { padding-bottom: 60vh; }
+body.home .row { min-height: 44px; }
+body.home .row .main { padding: 4px 0; }
+.note { margin: 0 0 10px; font-size: 13px; color: var(--muted); }
+.note.warn { color: var(--danger); font-weight: 600; }
+
+/* Rows */
+#rows { position: relative; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.row {
+  display: flex; align-items: center; gap: 4px; min-height: 56px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+  padding-left: 6px; position: relative;
+}
+.row.picked { background: var(--picked); }
+.row.first-done { margin-top: 40px; }
+#rows.folded { padding-bottom: 46px; }
+.sect { position: absolute; left: 0; right: 0; height: 40px; list-style: none; }
+.sect button { width: 100%; height: 100%; display: flex; align-items: center; justify-content: flex-end; gap: 6px; padding: 0 12px 0 0; color: var(--muted); font-size: 13px; border-radius: 10px; }
+.sect svg { transition: transform .18s ease; }
+.sect.open svg { transform: rotate(180deg); }
+.sorting .sect { opacity: 0; }
+.badge { position: absolute; right: 10px; top: -9px; z-index: 4; min-width: 24px; padding: 1px 7px; border-radius: 11px; background: var(--accent); color: var(--accent-ink); font-size: 12px; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; }
+.more { list-style: none; }
+.more.gap { margin-top: 40px; }
+.more button { width: 100%; min-height: 40px; color: var(--muted); font-size: 13px; border-radius: 10px; }
+.set { padding: 4px 12px 10px; display: flex; flex-direction: column; gap: 14px; font-size: 15px; }
+.set label { display: flex; align-items: center; gap: 10px; }
+.set label span { flex: 1; min-width: 0; }
+.set input[type="number"] { width: 72px; height: 40px; flex: none; text-align: center; font-size: 16px; color: var(--ink); background: var(--bg); border: 1.5px solid var(--line); border-radius: 8px; }
+.set input[type="number"]:focus { border-color: var(--accent); outline: none; }
+.set input[type="checkbox"] {
+  -webkit-appearance: none; appearance: none; flex: none; margin: 0; cursor: pointer;
+  width: 46px; height: 26px; border-radius: 13px; background: var(--line); position: relative; transition: background .15s ease;
+}
+.set input[type="checkbox"]::before {
+  content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 10px;
+  background: var(--muted); transition: transform .15s ease, background .15s ease;
+}
+.set input[type="checkbox"]:checked { background: var(--accent); }
+.seg { display: flex; flex: none; border: 1.5px solid var(--line); border-radius: 10px; overflow: hidden; }
+.seg button { padding: 8px 10px; font-size: 14px; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.set .theme-row { display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
+.set .theme-row .seg button { flex: 1; }
+.set input[type="checkbox"]:checked::before { transform: translateX(20px); background: var(--accent-ink); }
+.box { width: 22px; height: 22px; border: 2.8px solid var(--accent); border-radius: 11px; display: grid; place-items: center; color: var(--accent-ink); }
+.box.on { background: var(--accent); border-color: var(--accent); }
+.box svg { opacity: 0; }
+.box.on svg { opacity: 1; }
+.main { flex: 1; min-width: 0; padding: 10px 0; text-align: left; align-self: stretch; display: flex; flex-direction: column; justify-content: center; }
+.row { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.text[contenteditable] { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
+.text { overflow-wrap: anywhere; white-space: pre-wrap; border-radius: 4px; outline: none; }
+.row.done .text { color: var(--muted); }
+.name { font: 500 16px/1.25 var(--display); letter-spacing: -.01em; overflow-wrap: anywhere; }
+.l-ico svg { width: 30px; height: 30px; }
+.l-ico { width: 32px; flex: none; margin-right: 8px; display: grid; place-items: center; font-size: 19px; line-height: 1; color: var(--muted); }
+.meta { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.star { width: 40px; flex: none; display: grid; place-items: center; color: var(--star); }
+.star svg { width: 30px; height: 30px; }
+.row { touch-action: pan-y; padding-right: 12px; }
+.row.held { transition: transform .12s ease, box-shadow .12s ease; transform: scale(1.02); box-shadow: var(--shadow); z-index: 3; }
+.row.swiping { z-index: 1; transition: none; }
+.row.dragging { z-index: 5; transition: none; box-shadow: var(--shadow); cursor: grabbing; }
+.row.swiping.settling { transition: transform .18s ease; }
+.lead { margin-right: 6px; }
+.row:has(.check) { min-height: 46px; }
+.row:has(.check) .main { padding: 4px 0; }
+.text { line-height: 1.25; }
+.under { position: absolute; left: 0; right: 0; z-index: 0; border-radius: 12px; display: flex; align-items: center; padding: 0 20px; list-style: none; }
+.under svg { transition: transform .12s ease; }
+.under.armed svg { transform: scale(1.35); }
+.under.del { background: var(--del); color: var(--on-del); justify-content: flex-start; }
+.under.unfav .i-star { fill: none; stroke: var(--unstar); stroke-width: 2; stroke-linejoin: round; }
+.under .i-trash { width: 30px; height: 30px; }
+.under.armed .i-trash { transform: scale(1.2); }
+.under.fav { background: var(--picked); color: var(--star); justify-content: flex-end; }
+.under.del .i-star, .under.fav .i-trash { display: none; }
+
+.empty { text-align: center; padding: 48px 12px; color: var(--muted); }
+.empty strong { display: block; font: 600 20px/1.2 var(--display); color: var(--ink); margin-bottom: 6px; }
+
+/* Bottom bar */
+.bar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 6;
+  background: var(--surface); border-top: 1px solid var(--line);
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+}
+.bar-in { max-width: 608px; margin-inline: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+#addInput {
+  flex: 1; min-width: 0; height: 44px; padding: 0 14px; font-size: 16px;
+  background: var(--bg); border: 1.5px solid var(--line); border-radius: 22px;
+}
+#addInput:focus { border-color: var(--accent); outline: none; }
+#addInput::placeholder { color: var(--muted); }
+#addBtn {
+  position: fixed; right: max(20px, calc((100vw - 640px) / 2 + 20px)); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); z-index: 6;
+  width: 58px; height: 58px; border-radius: 29px; display: grid; place-items: center;
+  background: var(--star); color: var(--add-ink); box-shadow: var(--shadow);
+}
+.text:empty::before { content: "\200B"; }
+#addBtn .i-done, #addBtn.finish .i-add { display: none; }
+#addBtn.finish .i-done { display: block; }
+body.typing #addBtn { bottom: calc((20px + var(--lift, 0px)) / var(--zoom, 1) + env(safe-area-inset-bottom, 0px)); }
+body.typing.kb-guess #addBtn { bottom: calc((45vh - 63px + var(--lift, 0px)) / var(--zoom, 1)); }   /* undo the text-size zoom so the spot stays put on screen */
+.dev { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.dev > span:first-child { flex: 1 0 100%; }
+.dev label { flex: 1; gap: 6px; }
+.dev label span { font-size: 14px; color: var(--muted); }
+.set small.note { display: block; margin-top: 2px; font-size: 13px; line-height: 1.3; color: var(--muted); }
+.go { height: 44px; padding: 0 18px; border-radius: 22px; background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+#overlay { position: fixed; inset: 0; z-index: 10; background: var(--scrim); display: flex; }
+#overlay.menu { align-items: flex-start; justify-content: flex-end; padding: calc(env(safe-area-inset-top, 0px) + 60px) max(16px, calc((100vw - 640px) / 2 + 16px)) 16px 16px; }
+#overlay.modal { align-items: center; justify-content: center; padding: 24px; }
+#panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); width: min(300px, 100%); max-height: 70vh; overflow: auto; padding: 8px; }
+.p-title { color: var(--accent); margin: 0; padding: 8px 12px 6px; font: 600 16px/1.3 var(--body); overflow-wrap: anywhere; }
+.modal .p-title { font: 700 19px/1.25 var(--display); padding-top: 12px; }
+.p-hint { margin: 0; padding: 0 12px 10px; font-size: 14px; color: var(--muted); }
+.opt { display: block; width: 100%; text-align: left; min-height: 48px; padding: 6px 12px; border-radius: 8px; font-weight: 500; overflow-wrap: anywhere; }
+.opt:hover, .opt:active { background: var(--bg); }
+.opt.danger { color: var(--danger); }
+.p-title.count { font-weight: 400; font-style: italic; }
+.info { margin: 0; padding: 0 12px 8px; display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 15px; }
+.info dt { color: var(--muted); }
+.info dd { margin: 0; font-variant-numeric: tabular-nums; }
+.modal .p-title.plain { font: 400 18px/1.3 var(--body); }
+.opt.ctl { color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.p-sub { margin: 0; padding: 0 4px 8px 12px; display: flex; align-items: center; gap: 4px; font-size: 17px; font-weight: 500; }
+.p-sub span { flex: 1; font-variant-numeric: tabular-nums; }
+.p-sub button { width: 44px; height: 44px; border-radius: 22px; display: grid; place-items: center; color: var(--accent); }
+.p-sub button:hover, .p-sub button:active { background: var(--bg); }
+.p-body { padding: 0 12px 8px; display: flex; flex-direction: column; gap: 8px; }
+.p-body textarea { width: 100%; min-height: 180px; resize: vertical; font: 14px/1.4 ui-monospace, "Roboto Mono", Menlo, monospace; font-size: 16px; color: var(--ink); background: var(--bg); border: 1.5px solid var(--line); border-radius: 8px; padding: 8px; }
+.p-body textarea:focus { border-color: var(--accent); outline: none; }
+.pick-line { display: flex; align-items: center; gap: 10px; }
+.pick { color: var(--accent); border-color: var(--accent); }
+.pick-name { min-width: 0; font-size: 14px; color: var(--muted); overflow-wrap: anywhere; }
+#overlay.wide #panel { width: min(420px, 100%); }
+
+#toast {
+  position: fixed; left: 16px; right: 16px; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); z-index: 7;
+  max-width: 480px; margin-inline: auto; padding: 12px 16px; border-radius: 12px;
+  background: var(--ink); color: var(--bg); font-size: 14px; box-shadow: var(--shadow);
+  display: flex; align-items: center; gap: 12px;
+}
+#undoBtn {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(84px + env(safe-area-inset-bottom, 0px)); z-index: 7;
+  height: 44px; padding: 0 22px; border-radius: 22px; background: var(--del); color: var(--on-del);
+  font-weight: 700; letter-spacing: .06em; box-shadow: var(--shadow);
+}
+#toast span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+#toast button { flex: none; min-height: 36px; padding: 0 8px; font-weight: 700; text-decoration: underline; color: inherit; }
+@media (prefers-reduced-motion: reduce) { .sorting .row { transition: none; } }
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header class="top">
+    <button id="back" class="chip" type="button" aria-label="Back to all lists" hidden>
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 3 5 9l6 6"/></svg>
+    </button>
+    <h1><button id="title" type="button" disabled></button></h1>
+    <input id="titleInput" type="text" maxlength="80" aria-label="List name" enterkeyhint="done" hidden>
+    <button id="menuBtn" class="chip" type="button" aria-label="Options" aria-haspopup="menu" hidden>
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 4.5h12M3 9h12M3 13.5h12"/></svg>
+    </button>
+  </header>
+  <p id="note" class="note" hidden></p>
+  <p id="sync" class="note warn" role="status" hidden>Not saved yet. Retrying…</p>
+  <ul id="rows"></ul>
+  <div id="empty" class="empty"><strong>Opening your lists</strong>One moment.</div>
+</div>
+
+<button id="addBtn" type="button" aria-label="Add" hidden>
+  <svg class="i-add" width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M13 5v16M5 13h16"/></svg>
+  <svg class="i-done" width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 14.5 5.5 5.5L22 9"/></svg>
+</button>
+
+<div id="overlay" hidden><div id="panel" role="dialog" aria-modal="true"></div></div>
+
+<div id="toast" role="status" aria-live="polite" hidden></div>
+<button id="undoBtn" type="button" aria-label="Undo" hidden>UNDO</button>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const rowsEl = $('rows');
+  const LS_KEY = 'listshelf.lists.v1';
+  const VIEW_KEY = 'listshelf.view';
+  const OUT_KEY = 'listshelf.unsaved.v1';
+  const RP_KEY = 'listshelf.restorepoints.v1';
+  const RP_EVERY = 24 * 60 * 60 * 1000;
+  const SET_KEY = 'listshelf.settings.v1';
+  const DEFAULTS = { theme: 'system', recentDays: 0, keepStarred: false, starredFirst: false, newAtBottom: false, confirmListSwipe: false, autoPoints: true, keepPoints: 7, undoSeconds: 7, sound: true, soundLevel: 50, vibrate: true };
+  let settings = Object.assign({}, DEFAULTS);   // recentDays 0 shows every completed item
+  let settingsBusy = false;
+  let showOlder = null;          // id of the list whose older completed items are being shown for now
+  let points = [];               // restore points: [{id, savedAt, auto, lists}] kept in the account, newest first
+  const CHECK = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m3 7.5 2.8 2.8L11 4.5"/></svg>';
+  const LIST_ICON = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 5h8M8 10h8M8 15h8"/><circle cx="4" cy="5" r="1.1" fill="currentColor" stroke="none"/><circle cx="4" cy="10" r="1.1" fill="currentColor" stroke="none"/><circle cx="4" cy="15" r="1.1" fill="currentColor" stroke="none"/></svg>';
+  const STAR = '<svg class="i-star" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.6l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.5l-5.9 3.1 1.2-6.5L2.5 9.5l6.6-.9z"/></svg>';
+  const TRASH = '<svg class="i-trash" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6.5 7l1 13h9l1-13M10 11v6M14 11v6"/></svg>';
+
+  const state = {
+    mode: 'loading',      // loading | cloud | local
+    lists: [],            // [{id, name, order, addType, items:[{id, text, type, done}]}]
+    view: null,           // open list id, or null for the shelf of all lists
+    select: false,
+    picked: new Set(),
+  };
+  let col = null;                 // the viewer's private collection, in cloud mode
+  const pending = new Map();      // list id -> {running, dirty, timer}
+  let drag = null;
+  let skipClick = false;
+  let anchor = null;            // the row most recently picked, where a range selection starts
+  let press = null;             // a finger down on a row: waiting, swiping sideways, or held long enough to reorder or select
+  let panelOpen = false;
+  let armed = false, exiting = false;
+  let editing = false;
+  let editingList = null;        // id of the list an item is being typed into
+  let activeCommit = null;       // saves the text being typed right now, if any
+  let deferred = false;
+  let wantView = null;
+  try { wantView = sessionStorage.getItem(VIEW_KEY); } catch (e) {}
+
+  const newId = (p) => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  const current = () => state.lists.find((l) => l.id === state.view) || null;
+  const sortLists = () => state.lists.sort((a, b) => (a.order - b.order) || a.name.localeCompare(b.name));
+
+  const stamp = (v) => (typeof v === 'number' && isFinite(v) && v > 0 ? v : 0);   // 0 means not recorded
+  function norm(id, x) {
+    const out = {
+      id,
+      name: typeof x.name === 'string' && x.name ? x.name : 'Untitled list',
+      order: typeof x.order === 'number' ? x.order : 0,
+            items: (Array.isArray(x.items) ? x.items : []).filter((i) => i && typeof i === 'object').map((i) => ({
+        id: typeof i.id === 'string' && i.id ? i.id : newId('i'),
+        text: typeof i.text === 'string' ? i.text : '',
+        done: !!i.done,
+        fav: !!i.fav,
+        created: stamp(i.created), changed: stamp(i.changed), completedAt: stamp(i.completedAt),
+      })),
+      created: stamp(x.created), changed: stamp(x.changed), collapsed: !!x.collapsed,
+    };
+    out.items = out.items.filter((i) => i.text);
+    out.items = out.items.filter((i) => !i.done).concat(out.items.filter((i) => i.done));
+    return out;
+  }
+  const body = (l) => ({
+    name: l.name, order: l.order, created: l.created || 0, changed: l.changed || 0, collapsed: !!l.collapsed,
+    items: l.items.map((i) => ({ id: i.id, text: i.text, done: !!i.done, fav: !!i.fav, created: i.created || 0, changed: i.changed || 0, completedAt: i.completedAt || 0 })),
+  });
+  /* A short sound and buzz when an item is completed or reopened. */
+  let audio = null;
+  function feedback(done) {
+    if (settings.vibrate) { try { if (navigator.vibrate) navigator.vibrate(done ? [12, 40, 18] : 10); } catch (e) {} }
+    if (!settings.sound || !settings.soundLevel) return;
+    try {
+      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+      if (audio.state === 'suspended') audio.resume();
+      const t0 = audio.currentTime, notes = [520], peak = 0.36 * settings.soundLevel / 100;
+      notes.forEach((f, k) => {
+        const o = audio.createOscillator(), g = audio.createGain(), t = t0 + k * 0.07;
+        o.type = 'sine'; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak), t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+        o.connect(g); g.connect(audio.destination); o.start(t); o.stop(t + 0.18);
+      });
+    } catch (e) {}
+  }
+  function setDone(it, done) { it.done = done; it.changed = Date.now(); if (done) it.completedAt = it.changed; }
+
+  /* ---------- saving ---------- */
+  /* Unsaved changes are also kept in this browser until the account confirms them, so a closed app or a dead connection does not lose them. */
+  function outbox() { try { return JSON.parse(localStorage.getItem(OUT_KEY) || '{}') || {}; } catch (e) { return {}; } }
+  function outboxSet(id, l) { try { const o = outbox(); o[id] = l ? body(l) : null; localStorage.setItem(OUT_KEY, JSON.stringify(o)); } catch (e) {} }
+  function outboxDrop(id) { try { const o = outbox(); if (id in o) { delete o[id]; localStorage.setItem(OUT_KEY, JSON.stringify(o)); } } catch (e) {} }
+  function updateStatus() {
+    let late = false;
+    pending.forEach((p) => { if (p.fails > 0 || p.slow) late = true; });
+    $('sync').hidden = !late;
+  }
+  function persist(id, quiet) {
+    const tl = state.lists.find((x) => x.id === id);
+    if (tl) { arrange(tl); if (!quiet) tl.changed = Date.now(); }
+    if (state.mode === 'local') { saveLocal(); return; }
+    if (!col) return;
+    outboxSet(id, state.lists.find((x) => x.id === id));
+    let p = pending.get(id);
+    if (!p) { p = { running: false, dirty: false, timer: 0, fails: 0, slow: false, slowTimer: 0 }; pending.set(id, p); }
+    p.dirty = true;
+    clearTimeout(p.timer);
+    p.timer = setTimeout(() => flush(id), 250);
+  }
+  async function flush(id) {
+    const p = pending.get(id);
+    if (!p || p.running) return;
+    clearTimeout(p.timer);
+    p.running = true;
+    while (p.dirty) {
+      p.dirty = false;
+      const l = state.lists.find((x) => x.id === id);
+      clearTimeout(p.slowTimer);
+      p.slowTimer = setTimeout(() => { p.slow = true; updateStatus(); }, 3000);
+      try { await writeOnce(id, l); p.fails = 0; }
+      catch (e) {
+        const code = e && e.code;
+        clearTimeout(p.slowTimer);
+        if (code === 'invalid_argument' || code === 'quota_exceeded' || code === 'transform_error') { saveFailed(e); break; }
+        p.fails++; p.dirty = true; p.running = false;
+        p.timer = setTimeout(() => flush(id), Math.min(30000, 2000 * Math.pow(2, p.fails - 1)));
+        updateStatus();
+        return;
+      }
+      clearTimeout(p.slowTimer); p.slow = false;
+    }
+    p.running = false;
+    pending.delete(id);
+    outboxDrop(id);
+    updateStatus();
+  }
+  function flushAll() {
+    if (activeCommit) activeCommit();
+    pending.forEach((p, id) => { if (p.dirty && !p.running) flush(id); });
+  }
+  async function writeOnce(id, l, retried) {
+    const ref = col.doc(id);
+    try { if (l) await ref.set(body(l)); else await ref.delete(); }
+    catch (e) {
+      if (e && e.code === 'unavailable' && !retried) {
+        await new Promise((r) => setTimeout(r, 600 + Math.random() * 600));
+        return writeOnce(id, l, true);
+      }
+      throw e;
+    }
+  }
+  function saveFailed(e) {
+    if (e && e.code === 'quota_exceeded') toast('Storage is full. Delete some lists or items, then try again.');
+    else toast('That change could not be saved. The list may be too large.');
+  }
+  function saveLocal() {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(state.lists.map((l) => Object.assign({ id: l.id }, body(l))))); }
+    catch (e) { toast('This browser is not letting the page save. Changes will be lost when you close it.'); }
+  }
+  function startLocal() {
+    col = null;
+    state.mode = 'local';
+    try {
+      const raw = JSON.parse(localStorage.getItem(LS_KEY) || '[]');
+      state.lists = (Array.isArray(raw) ? raw : []).filter((x) => x && x.id).map((x) => norm(String(x.id), x));
+    } catch (e) { state.lists = []; }
+    try { settings = normSettings(JSON.parse(localStorage.getItem(SET_KEY) || '{}')); } catch (e) {}
+    applyTheme();
+    try { const r = JSON.parse(localStorage.getItem(RP_KEY) || '[]'); points = (Array.isArray(r) ? r : []).filter((x) => x && Array.isArray(x.lists)); } catch (e) { points = []; }
+    sortLists();
+    restoreView();
+    render();
+    setTimeout(autoPoint, 4000);
+  }
+
+  /* ---------- restore points: backups kept with the lists, so no file is needed ---------- */
+  function normSettings(x) {
+    x = x || {};
+    const num = (v, lo, hi, dflt) => { const n = Math.floor(Number(v)); return v !== '' && v != null && n >= lo && n <= hi ? n : dflt; };
+    const flag = (k) => (typeof x[k] === 'boolean' ? x[k] : DEFAULTS[k]);
+    return {
+      theme: ['light', 'dark'].includes(x.theme) ? x.theme : 'system',
+      recentDays: num(x.recentDays, 1, 3650, 0), keepStarred: flag('keepStarred'), starredFirst: flag('starredFirst'), newAtBottom: flag('newAtBottom'),
+      confirmListSwipe: flag('confirmListSwipe'), autoPoints: flag('autoPoints'), keepPoints: num(x.keepPoints, 1, 30, DEFAULTS.keepPoints), undoSeconds: num(x.undoSeconds, 2, 60, DEFAULTS.undoSeconds), sound: flag('sound'), soundLevel: num(x.soundLevel, 1, 100, DEFAULTS.soundLevel), vibrate: flag('vibrate'),
+    };
+  }
+  /* Open items stay above completed ones; with the setting on, starred open items lead. */
+  function arrange(l) {
+    const open = l.items.filter((i) => !i.done), done = l.items.filter((i) => i.done);
+    l.items = (settings.starredFirst ? open.filter((i) => i.fav).concat(open.filter((i) => !i.fav)) : open).concat(done);
+  }
+  /* Text size is kept per device and per app, not in the account, so each place it is opened can have its own. */
+  const SIZE_KEY = 'listshelf.textsize.v1', LIFT_KEY = 'listshelf.donelift.v1';
+  const clampNum = (v, lo, hi, d) => { const n = Math.round(Number(v)); return v !== '' && v != null && isFinite(n) ? Math.min(hi, Math.max(lo, n)) : d; };
+  let textSize = 100, doneLift = 0;   // doneLift: extra pixels the ✓ button sits above its usual spot while typing
+  try { textSize = clampNum(localStorage.getItem(SIZE_KEY), 70, 160, 100); doneLift = clampNum(localStorage.getItem(LIFT_KEY), -300, 300, 0); } catch (e) {}
+  function applySize() {
+    const st = document.documentElement.style;
+    st.zoom = textSize === 100 ? '' : String(textSize / 100);
+    st.setProperty('--zoom', String(textSize / 100));
+    st.setProperty('--lift', doneLift + 'px');
+  }
+  function setSize(v) { textSize = clampNum(v, 70, 160, 100); applySize(); try { localStorage.setItem(SIZE_KEY, String(textSize)); } catch (e) {} }
+  function setLift(v) { doneLift = clampNum(v, -300, 300, 0); applySize(); try { localStorage.setItem(LIFT_KEY, String(doneLift)); } catch (e) {} }
+  applySize();
+  function applyTheme() {
+    if (settings.theme === 'system') document.documentElement.removeAttribute('data-app-theme');
+    else document.documentElement.setAttribute('data-app-theme', settings.theme);
+  }
+  async function saveSettings() {
+    try {
+      if (state.mode === 'local') localStorage.setItem(SET_KEY, JSON.stringify(settings));
+      else if (col) { settingsBusy = true; await col.doc('settings').set(Object.assign({ kind: 'settings' }, settings)); }
+    } catch (e) { toast('That setting could not be saved. Try again.'); }
+    settingsBusy = false;
+  }
+  async function savePoint(auto) {
+    if (!state.lists.length) return false;
+    const pt = { id: 'backup-' + Date.now().toString(36), savedAt: Date.now(), auto: !!auto, lists: state.lists.map((l) => Object.assign({ id: l.id }, body(l))) };
+    const drop = [pt].concat(points).slice(settings.keepPoints);
+    try {
+      if (state.mode === 'local') {
+        points = [pt].concat(points).slice(0, settings.keepPoints);
+        localStorage.setItem(RP_KEY, JSON.stringify(points));
+      } else if (col) {
+        await col.doc(pt.id).set({ kind: 'backup', savedAt: pt.savedAt, auto: pt.auto, lists: pt.lists });
+        points = [pt].concat(points.filter((x) => x.id !== pt.id)).slice(0, settings.keepPoints);
+        for (const old of drop) { try { await col.doc(old.id).delete(); } catch (e) {} }
+      } else return false;
+      return true;
+    } catch (e) { return false; }
+  }
+  function autoPoint() {
+    if (state.mode === 'loading' || !state.lists.length || !settings.autoPoints) return;
+    if (points.length && Date.now() - points[0].savedAt < RP_EVERY) return;
+    savePoint(true);
+  }
+  function restorePoint(pt) {
+    const lists = pt.lists.filter((x) => x && typeof x.id === 'string').map((x) => norm(x.id, JSON.parse(JSON.stringify(x))));
+    lists.forEach((l) => { state.lists = state.lists.filter((x) => x.id !== l.id); state.lists.push(l); persist(l.id, true); });
+    sortLists(); render();
+    toast('Restored ' + lists.length + (lists.length === 1 ? ' list.' : ' lists.'));
+  }
+  function onSnap(snap) {
+    const byId = new Map(state.lists.map((l) => [l.id, l]));
+    const next = [];
+    const seen = new Set();
+    const found = [];
+    snap.docs.forEach((d) => {
+      const x = d.data();
+      if (x && x.kind === 'settings') { if (!settingsBusy) { settings = normSettings(x); applyTheme(); } return; }
+      if (x && x.kind === 'backup' && Array.isArray(x.lists)) { found.push({ id: d.id, savedAt: stamp(x.savedAt), auto: !!x.auto, lists: x.lists }); return; }
+      if (!x || !Array.isArray(x.items)) return;
+      seen.add(d.id);
+      if (pending.has(d.id) || d.id === editingList) { const loc = byId.get(d.id); if (loc) next.push(loc); }
+      else next.push(norm(d.id, JSON.parse(JSON.stringify(x))));
+    });
+    state.lists.forEach((l) => { if (!seen.has(l.id) && (pending.has(l.id) || l.id === editingList)) next.push(l); });
+    state.lists = next;
+    points = found.sort((a, b) => b.savedAt - a.savedAt);
+    sortLists();
+    const first = state.mode !== 'cloud';
+    state.mode = 'cloud';
+    if (first) {
+      const o = outbox();
+      Object.keys(o).forEach((id) => {
+        state.lists = state.lists.filter((l) => l.id !== id);
+        if (o[id] && typeof o[id] === 'object') state.lists.push(norm(id, o[id]));
+        persist(id, true);
+      });
+      sortLists();
+      restoreView();
+      setTimeout(autoPoint, 4000);
+    }
+    if (drag || editing || press) deferred = true; else render();
+  }
+  function restoreView() {
+    if (wantView && state.lists.some((l) => l.id === wantView)) state.view = wantView;
+    wantView = null;
+  }
+  /* ===================== Dropbox sync =====================
+     Every change is written to this device first, so the app is instant and works offline.
+     About 30 seconds after the last change (and whenever the app is opened, hidden or comes back
+     online) the device merges its copy with lists.json in the app's Dropbox folder and writes the
+     result back, but only if nobody else wrote in between; otherwise it merges again.
+     Restore points are separate files in /restore-points. */
+  const DBX = (() => {
+    const APP_KEY = 'dte2082rey27v56';
+    const FILE = '/lists.json', POINTS = '/restore-points';
+    const K = { tok: 'dbx.token.v1', docs: 'dbx.docs.v1', base: 'dbx.base.v1', rev: 'dbx.rev.v1', pts: 'dbx.points.v1', ptsDirty: 'dbx.pointsdirty.v1', synced: 'dbx.synced.v1', verifier: 'dbx.verifier.v1' };
+    const QUIET_MS = 30000, PULL_MS = 60000, TOMBSTONE_MS = 60 * 86400000;
+    const ls = {
+      get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+      set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+      del(k) { try { localStorage.removeItem(k); } catch (e) {} },
+    };
+    const redirectUri = () => location.origin + location.pathname;
+    let tok = ls.get(K.tok, null);                  // {refresh, access, exp}
+    let docs = ls.get(K.docs, {});                  // id -> {d, at}   (d null = deleted)
+    let base = ls.get(K.base, {});                  // the Dropbox copy as of the last sync
+    let rev = ls.get(K.rev, null);
+    let points = ls.get(K.pts, {});                 // restore point id -> data
+    let ptsDirty = ls.get(K.ptsDirty, {});          // id -> 'put' | 'del', waiting to reach Dropbox
+    let lastSynced = ls.get(K.synced, 0);
+    let listeners = [], statusCb = () => {}, timer = 0, running = false, again = false, dirty = false, changes = 0, status = 'idle', ptsLoaded = false;
+
+    const save = () => { ls.set(K.docs, docs); ls.set(K.base, base); ls.set(K.rev, rev); ls.set(K.pts, points); ls.set(K.ptsDirty, ptsDirty); ls.set(K.synced, lastSynced); };
+    const setStatus = (s) => { status = s; statusCb(s, lastSynced); };
+    const emit = () => {
+      const out = Object.keys(docs).filter((id) => docs[id] && docs[id].d).map((id) => ({ id, data: () => docs[id].d }));
+      Object.keys(points).forEach((id) => out.push({ id, data: () => points[id] }));
+      listeners.forEach((f) => { try { f({ docs: out }); } catch (e) { console.error(e); } });
+    };
+
+    /* ----- sign-in (OAuth with PKCE: no secret lives in the page) ----- */
+    const b64url = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    async function signIn() {
+      const v = b64url(crypto.getRandomValues(new Uint8Array(48)));
+      ls.set(K.verifier, v);
+      const ch = b64url(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(v)));
+      const q = new URLSearchParams({ client_id: APP_KEY, response_type: 'code', code_challenge: ch, code_challenge_method: 'S256', redirect_uri: redirectUri(), token_access_type: 'offline' });
+      location.href = 'https://www.dropbox.com/oauth2/authorize?' + q;
+    }
+    async function tokenCall(params) {
+      const r = await fetch('https://api.dropboxapi.com/oauth2/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(Object.assign({ client_id: APP_KEY }, params)) });
+      if (!r.ok) { const e = new Error('token ' + r.status); e.status = r.status; e.body = await r.text().catch(() => ''); throw e; }
+      return r.json();
+    }
+    /* Called on load: finishes a sign-in that has just come back from Dropbox. */
+    async function finishSignIn() {
+      const u = new URL(location.href), code = u.searchParams.get('code');
+      if (!code && !u.searchParams.get('error')) return false;
+      history.replaceState(history.state, '', redirectUri() + location.hash);
+      if (!code) return false;
+      const v = ls.get(K.verifier, null); ls.del(K.verifier);
+      if (!v) return false;
+      const j = await tokenCall({ grant_type: 'authorization_code', code, code_verifier: v, redirect_uri: redirectUri() });
+      tok = { refresh: j.refresh_token, access: j.access_token, exp: Date.now() + (j.expires_in - 120) * 1000 };
+      ls.set(K.tok, tok);
+      return true;
+    }
+    async function access(force) {
+      if (!tok || !tok.refresh) throw Object.assign(new Error('signed out'), { signedOut: true });
+      if (!force && tok.access && Date.now() < tok.exp) return tok.access;
+      try {
+        const j = await tokenCall({ grant_type: 'refresh_token', refresh_token: tok.refresh });
+        tok.access = j.access_token; tok.exp = Date.now() + (j.expires_in - 120) * 1000; ls.set(K.tok, tok);
+        return tok.access;
+      } catch (e) {
+        if (e.status === 400 || e.status === 401) { tok = null; ls.del(K.tok); setStatus('signedout'); throw Object.assign(new Error('signed out'), { signedOut: true }); }
+        throw e;
+      }
+    }
+    async function call(url, opts, retried) {
+      const a = await access(false);
+      opts = Object.assign({}, opts, { headers: Object.assign({ Authorization: 'Bearer ' + a }, opts.headers || {}) });
+      const r = await fetch(url, opts);
+      if (r.status === 401 && !retried) { await access(true); return call(url, opts, true); }
+      return r;
+    }
+    const argHeader = (o) => JSON.stringify(o).replace(/[\u007f-￿]/g, (c) => '\\u' + ('000' + c.charCodeAt(0).toString(16)).slice(-4));
+    async function download(path) {
+      const r = await call('https://content.dropboxapi.com/2/files/download', { method: 'POST', headers: { 'Dropbox-API-Arg': argHeader({ path }) } });
+      if (r.status === 409) { const t = await r.text(); if (/not_found/.test(t)) return null; throw new Error('download 409 ' + t); }
+      if (!r.ok) throw new Error('download ' + r.status);
+      let meta = null; try { meta = JSON.parse(r.headers.get('Dropbox-API-Result') || 'null'); } catch (e) {}
+      const text = await r.text();
+      if (!meta) {   // the header was not exposed: ask for the revision separately
+        const m = await call('https://api.dropboxapi.com/2/files/get_metadata', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path }) });
+        meta = m.ok ? await m.json() : {};
+      }
+      return { text, rev: meta.rev || null };
+    }
+    async function upload(path, text, mode) {
+      const r = await call('https://content.dropboxapi.com/2/files/upload', { method: 'POST', headers: { 'Content-Type': 'application/octet-stream', 'Dropbox-API-Arg': argHeader({ path, mode, autorename: false, mute: true }) }, body: text });
+      if (r.status === 409) { const t = await r.text(); if (/conflict/.test(t)) return { conflict: true }; throw new Error('upload 409 ' + t); }
+      if (!r.ok) throw new Error('upload ' + r.status);
+      return r.json();
+    }
+    async function remove(path) {
+      const r = await call('https://api.dropboxapi.com/2/files/delete_v2', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path }) });
+      if (r.status === 409) return;   // already gone
+      if (!r.ok) throw new Error('delete ' + r.status);
+    }
+    async function listFolder(path) {
+      const r = await call('https://api.dropboxapi.com/2/files/list_folder', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path }) });
+      if (r.status === 409) return [];
+      if (!r.ok) throw new Error('list ' + r.status);
+      const j = await r.json(); let out = j.entries || [], cur = j;
+      while (cur.has_more) {
+        const r2 = await call('https://api.dropboxapi.com/2/files/list_folder/continue', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cursor: cur.cursor }) });
+        if (!r2.ok) break; cur = await r2.json(); out = out.concat(cur.entries || []);
+      }
+      return out;
+    }
+
+    /* ----- merging ----- */
+    const J = (x) => JSON.stringify(x === undefined ? null : x);
+    const same = (a, b) => J(a && a.d) === J(b && b.d);
+    function mergeItems(newer, other, baseD) {
+      const bm = new Map(((baseD && baseD.items) || []).map((i) => [i.id, i]));
+      const om = new Map(other.items.map((i) => [i.id, i]));
+      const nm = new Map(newer.items.map((i) => [i.id, i]));
+      const out = [];
+      newer.items.forEach((it) => {
+        const o = om.get(it.id), b = bm.get(it.id);
+        if (!o && b) { if (J(it) !== J(b)) out.push(it); return; }   // deleted on the other device, kept only if edited here since
+        out.push(o && (o.changed || 0) > (it.changed || 0) ? o : it);
+      });
+      other.items.forEach((o, k) => {
+        if (nm.has(o.id)) return;
+        const b = bm.get(o.id);
+        if (b && J(o) === J(b)) return;                                 // deleted on the newer device and untouched here
+        const prev = k > 0 ? other.items[k - 1].id : null;
+        const at = prev ? out.findIndex((x) => x.id === prev) + 1 : 0;
+        out.splice(at, 0, o);
+      });
+      return Object.assign({}, newer, { items: out });
+    }
+    function mergeOne(id, l, b, r) {
+      if (same(l, r)) return (l && r) ? ((l.at || 0) >= (r.at || 0) ? l : r) : (l || r);
+      if (same(l, b)) return r;          // changed only in Dropbox
+      if (same(r, b)) return l;          // changed only here
+      const newer = (l && l.at || 0) >= (r && r.at || 0) ? l : r, older = newer === l ? r : l;
+      if (!newer || !newer.d || !older || !older.d) return newer && newer.d ? newer : (older && older.d && older.at > (newer ? newer.at : 0) ? older : newer);
+      if (!Array.isArray(newer.d.items) || !Array.isArray(older.d.items)) return newer;
+      return { d: mergeItems(newer.d, older.d, b && b.d), at: Math.max(l.at || 0, r.at || 0) };
+    }
+    function mergeAll(L, B, R) {
+      const out = {}, now = Date.now();
+      new Set([...Object.keys(L), ...Object.keys(B), ...Object.keys(R)]).forEach((id) => {
+        const m = mergeOne(id, L[id], B[id], R[id]);
+        if (m && (m.d || now - (m.at || 0) < TOMBSTONE_MS)) out[id] = m;
+      });
+      return out;
+    }
+
+    /* ----- syncing ----- */
+    async function syncPoints() {
+      for (const id of Object.keys(ptsDirty)) {
+        if (ptsDirty[id] === 'put' && points[id]) await upload(POINTS + '/' + id + '.json', JSON.stringify(points[id]), { '.tag': 'overwrite' });
+        else await remove(POINTS + '/' + id + '.json');
+        delete ptsDirty[id]; save();
+      }
+      const entries = (await listFolder(POINTS)).filter((e) => e['.tag'] === 'file' && /\.json$/.test(e.name));
+      const remote = new Set(entries.map((e) => e.name.replace(/\.json$/, '')));
+      let changed = false;
+      for (const id of Object.keys(points)) if (!remote.has(id) && !ptsDirty[id]) { delete points[id]; changed = true; }
+      for (const id of remote) if (!points[id]) {
+        const f = await download(POINTS + '/' + id + '.json');
+        if (f) { try { points[id] = JSON.parse(f.text); changed = true; } catch (e) {} }
+      }
+      save();
+      return changed;
+    }
+    async function sync() {
+      if (!tok) { setStatus('signedout'); return; }
+      if (running) { again = true; return; }
+      running = true; clearTimeout(timer);
+      if (!navigator.onLine) { setStatus('offline'); running = false; return; }
+      setStatus('syncing');
+      try {
+        let tries = 0;
+        while (tries++ < 6) {
+          again = false;
+          const startChanges = changes, L = JSON.parse(J(docs));
+          const f = await download(FILE);
+          let R = {};
+          if (f) { try { const j = JSON.parse(f.text); R = (j && j.docs) || {}; } catch (e) { throw new Error('lists.json in Dropbox could not be read'); } }
+          const M = mergeAll(L, base, R);
+          if (J(M) !== J(R)) {
+            const res = await upload(FILE, JSON.stringify({ app: 'lists-sync', version: 1, savedAt: Date.now(), docs: M }), f && f.rev ? { '.tag': 'update', update: f.rev } : { '.tag': 'add' });
+            if (res.conflict) continue;   // someone else wrote in between: merge again
+            rev = res.rev;
+          } else rev = f ? f.rev : rev;
+          base = M;
+          if (changes === startChanges) { docs = JSON.parse(J(M)); dirty = false; }
+          else {   // edits made while syncing stay, and go up next time
+            const now = JSON.parse(J(docs));
+            Object.keys(M).forEach((id) => { if (J(now[id]) === J(L[id])) now[id] = M[id]; });
+            docs = now; dirty = true;
+          }
+          break;
+        }
+        await syncPoints();
+        lastSynced = Date.now(); save(); emit();
+        setStatus(dirty ? 'pending' : 'synced');
+        if (dirty || again) schedule(2000);
+      } catch (e) {
+        save();
+        if (e.signedOut) setStatus('signedout');
+        else { console.warn('sync', e); setStatus(navigator.onLine ? 'error' : 'offline'); schedule(QUIET_MS); }
+      } finally { running = false; if (again) schedule(500); }
+    }
+    function schedule(ms) { clearTimeout(timer); timer = setTimeout(sync, ms); }
+
+    /* ----- what the app talks to: the same shape as the Claude store it replaces ----- */
+    const col = {
+      doc(id) {
+        return {
+          async set(d) {
+            if (id.startsWith('backup-')) { points[id] = JSON.parse(J(d)); ptsDirty[id] = 'put'; save(); schedule(300); return; }
+            docs[id] = { d: JSON.parse(J(d)), at: Date.now() }; changes++; dirty = true; save(); setStatus(navigator.onLine ? 'pending' : 'offline'); schedule(QUIET_MS);
+          },
+          async delete() {
+            if (id.startsWith('backup-')) { delete points[id]; ptsDirty[id] = 'del'; save(); schedule(300); return; }
+            docs[id] = { d: null, at: Date.now() }; changes++; dirty = true; save(); setStatus(navigator.onLine ? 'pending' : 'offline'); schedule(QUIET_MS);
+          },
+        };
+      },
+      onSnapshot(fn) { listeners.push(fn); setTimeout(emit, 0); return () => { listeners = listeners.filter((x) => x !== fn); }; },
+    };
+    function start(onStatus) {
+      statusCb = onStatus || statusCb;
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') { if (dirty || Object.keys(ptsDirty).length) sync(); } else sync(); });
+      window.addEventListener('online', () => sync());
+      window.addEventListener('offline', () => setStatus('offline'));
+      setInterval(() => { if (document.visibilityState === 'visible' && !dirty && !running) sync(); }, PULL_MS);
+      setStatus(dirty ? 'pending' : 'synced');
+      sync();
+    }
+    /* First connection on this device: lists made before connecting are added to Dropbox's. */
+    function seed(lists) {
+      if (Object.keys(docs).length || !lists.length) return;
+      const now = Date.now();
+      lists.forEach((l) => { docs[l.id] = { d: l, at: now }; });
+      changes++; dirty = true; save();
+    }
+    function signOut() {
+      tok = null; ls.del(K.tok);
+      [K.docs, K.base, K.rev, K.pts, K.ptsDirty, K.synced].forEach(ls.del);
+      docs = {}; base = {}; rev = null; points = {}; ptsDirty = {}; lastSynced = 0;
+    }
+    return { signedIn: () => !!tok, signIn, finishSignIn, signOut, start, seed, col, syncNow: () => sync(), status: () => status, lastSynced: () => lastSynced, pending: () => dirty, _merge: mergeAll };
+  })();
+
+  function syncNote(st, t) {
+    const hm = t ? when(t, '').split('@')[1] : '';
+    syncMsg = { synced: 'Synced with Dropbox' + (hm ? ' at ' + hm : ''), syncing: 'Syncing with Dropbox…', pending: 'Changes will sync to Dropbox shortly',
+      offline: 'Offline — changes are kept on this device and sync later', error: 'Could not reach Dropbox — will try again', signedout: 'Disconnected from Dropbox — connect again from the menu' }[st] || '';
+    const n = $('note'); if (state.mode === 'cloud') { n.hidden = !syncMsg; n.textContent = syncMsg; n.classList.toggle('warn', st === 'error' || st === 'signedout'); }
+  }
+  let syncMsg = '';
+  async function init() {
+    try { await DBX.finishSignIn(); } catch (e) { console.warn(e); toast('Dropbox sign-in did not finish. Try Connect Dropbox again.'); }
+    if (!DBX.signedIn()) { startLocal(); return; }
+    try { const raw = JSON.parse(localStorage.getItem(LS_KEY) || '[]'); DBX.seed((Array.isArray(raw) ? raw : []).filter((x) => x && x.id)); } catch (e) {}
+    col = DBX.col;
+    col.onSnapshot(onSnap);
+    DBX.start(syncNote);
+  }
+  function disconnectDropbox() {
+    saveLocal();                     // this device keeps its own copy of the lists
+    DBX.signOut();
+    location.reload();
+  }
+
+  /* ---------- rendering ---------- */
+  function setView(id) {
+    state.view = id; showOlder = null;
+    state.select = false; state.picked.clear();
+    try { if (id) sessionStorage.setItem(VIEW_KEY, id); else sessionStorage.removeItem(VIEW_KEY); } catch (e) {}
+    render();
+    window.scrollTo(0, 0);
+  }
+  function el(tag, cls, text) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+  /* The emoji a name starts with, if any: shown in the icon slot so every list name lines up. */
+  function leadEmoji(name) {
+    let first = '';
+    try { const it = new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(name)[Symbol.iterator]().next(); first = it.done ? '' : it.value.segment; }
+    catch (e) { const m = name.match(/^(?:\p{Extended_Pictographic}|\p{Regional_Indicator}{2})\uFE0F?/u); first = m ? m[0] : ''; }
+    return /^(?:\p{Extended_Pictographic}|\p{Regional_Indicator})/u.test(first) && !/^[0-9#*\u00A9\u00AE\u2122]$/.test(first) ? first : '';
+  }
+  function listRow(l) {
+    const li = el('li', 'row' + (state.picked.has(l.id) ? ' picked' : ''));
+    li.dataset.id = l.id;
+    li.style.paddingLeft = '12px';
+    const lead = leadEmoji(l.name);
+    const ico = el('span', 'l-ico', lead || null);
+    ico.setAttribute('aria-hidden', 'true');
+    if (!lead) ico.innerHTML = LIST_ICON;
+    li.appendChild(ico);
+    const main = el('button', 'main'); main.type = 'button';
+    main.appendChild(el('span', 'name', lead ? l.name.slice(lead.length).trim() : l.name));
+    const open = l.items.filter((i) => !i.done).length;
+    const n = l.items.length;
+    main.appendChild(el('span', 'meta', n === 0 ? 'Empty' : n + (n === 1 ? ' item' : ' items') + (open && open < n ? ' · ' + open + ' to do' : '')));
+    li.appendChild(main);
+    return li;
+  }
+  function itemRow(it, firstDone) {
+    const li = el('li', 'row' + (state.picked.has(it.id) ? ' picked' : '') + (it.done ? ' done' : '') + (firstDone ? ' first-done' : ''));
+    li.dataset.id = it.id;
+    const lead = el('button', 'lead check'); lead.type = 'button';
+    lead.setAttribute('role', 'checkbox'); lead.setAttribute('aria-checked', String(it.done));
+    lead.setAttribute('aria-label', 'Completed: ' + it.text);
+    const b = el('span', 'box' + (it.done ? ' on' : '')); b.innerHTML = CHECK; lead.appendChild(b);
+    li.appendChild(lead);
+    const main = el('div', 'main');
+    main.appendChild(el('span', 'text', it.text));
+    li.appendChild(main);
+    if (it.fav) { const st = el('span', 'star'); st.innerHTML = STAR; st.setAttribute('role', 'img'); st.setAttribute('aria-label', 'Starred'); li.appendChild(st); }
+    return li;
+  }
+  /* The items a list shows: all of them, or only the open ones while its completed section is folded away. */
+  const doneAt = (i) => i.completedAt || i.changed || i.created || 0;
+  const isOld = (i) => settings.recentDays > 0 && doneAt(i) > 0 && Date.now() - doneAt(i) > settings.recentDays * 86400000;
+  const kept = (i) => settings.keepStarred && i.fav;   // starred completed items stay in view
+  const shown = (l) => l.items.filter((i) => !i.done || kept(i) || (!l.collapsed && (showOlder === l.id || !isOld(i))));
+  function render() {
+    deferred = false;
+    const loading = state.mode === 'loading';
+    if (state.view && !current()) { state.view = null; state.select = false; state.picked.clear(); }
+    const list = current();
+    const doneCount = list ? list.items.filter((i) => i.done).length : 0;
+    const rows = list ? shown(list) : state.lists;
+    const ids = new Set(rows.map((r) => r.id));
+    state.picked.forEach((id) => { if (!ids.has(id)) state.picked.delete(id); });
+    if (!state.picked.size) state.select = false;
+
+    document.body.classList.toggle('home', !list);
+    $('back').hidden = !list || state.select;
+    $('title').textContent = state.select ? state.picked.size + ' selected' : list ? list.name : '';
+    $('title').disabled = !list || state.select;
+    $('title').title = list && !state.select ? 'Rename this list' : '';
+    $('menuBtn').hidden = loading;
+    if (state.mode === 'local') { $('note').hidden = false; $('note').textContent = 'Saved on this device only \u2014 connect Dropbox from the menu to sync.'; $('note').classList.remove('warn'); }
+    else { $('note').hidden = !syncMsg; $('note').textContent = syncMsg; }
+
+    rowsEl.textContent = '';
+    rows.forEach((r, i) => rowsEl.appendChild(list ? itemRow(r, r.done && (i === 0 || !rows[i - 1].done)) : listRow(r)));
+    rowsEl.classList.remove('folded');
+    if (list && doneCount) {
+      const older = list.collapsed ? 0 : list.items.filter((i) => i.done && !kept(i) && isOld(i)).length;
+      let more = null;
+      if (older) {
+        more = el('li', 'more'); const mb = el('button', '', showOlder === list.id ? 'Hide older' : 'Show ' + older + ' older');
+        mb.type = 'button';
+        mb.addEventListener('click', () => { const l = current(); showOlder = l && showOlder !== l.id ? l.id : null; render(); });
+        more.appendChild(mb); rowsEl.appendChild(more);
+      }
+      const li = el('li', 'sect' + (list.collapsed ? '' : ' open')), b = el('button');
+      b.type = 'button'; b.setAttribute('aria-expanded', String(!list.collapsed));
+      b.setAttribute('aria-label', (list.collapsed ? 'Show ' : 'Hide ') + doneCount + ' completed');
+      if (list.collapsed) b.appendChild(el('span', '', (doneCount - rows.filter((i) => i.done).length) + ' completed'));
+      b.insertAdjacentHTML('beforeend', '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 7 5 5 5-5"/></svg>');
+      b.addEventListener('click', () => { const l = current(); if (!l) return; l.collapsed = !l.collapsed; persist(l.id, true); render(); });
+      li.appendChild(b); rowsEl.appendChild(li);
+      const fd = rowsEl.querySelector('.first-done');
+      if (!fd && more) more.classList.add('gap');
+      const below = fd || more;
+      if (below) li.style.top = (below.offsetTop - 40) + 'px'; else { rowsEl.classList.add('folded'); li.style.bottom = '2px'; }
+    }
+
+    const empty = $('empty');
+    const total = list ? list.items.length : rows.length;
+    empty.hidden = total > 0 || !!list;   // an empty list just shows nothing until its first item
+    if (!total) {
+      empty.textContent = '';
+      empty.appendChild(el('strong', '', loading ? 'Opening your lists' : list ? 'Nothing here yet' : 'No lists yet'));
+      empty.appendChild(document.createTextNode(loading ? 'One moment.' : list ? 'Tap + to add an item.' : 'Tap + to create your first list.'));
+    }
+    $('addBtn').hidden = loading || state.select;
+    $('addBtn').setAttribute('aria-label', list ? 'Add an item' : 'Add a list');
+  }
+  let toastTimer = 0;
+  function toast(msg, action) {
+    const t = $('toast'); t.textContent = '';
+    t.appendChild(el('span', '', msg));
+    if (action) {
+      const b = el('button', '', action.label); b.type = 'button';
+      b.addEventListener('click', () => { t.hidden = true; action.act(); });
+      t.appendChild(b);
+    }
+    t.hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, action ? 7000 : 5000);
+  }
+
+  /* ---------- actions ---------- */
+  function reorder(from, to) {
+    const list = current();
+    if (list) {
+      const vis = shown(list), m = vis[from]; if (!m) return;
+      const active = vis.filter((i) => !i.done).length;
+      const rest = vis.filter((i) => i !== m);
+      list.items = list.items.filter((i) => i !== m);
+      const before = rest[to], last = rest[rest.length - 1];
+      const at = before ? list.items.indexOf(before) : last ? list.items.indexOf(last) + 1 : list.items.length;
+      list.items.splice(at, 0, m);
+      if (m.done && to < active) { setDone(m, false); feedback(false); }
+      else if (!m.done && to >= active) { setDone(m, true); feedback(true); }
+      list.items = list.items.filter((i) => !i.done).concat(list.items.filter((i) => i.done));
+      persist(list.id);
+    } else {
+      const [m] = state.lists.splice(from, 1); state.lists.splice(to, 0, m);
+      state.lists.forEach((l, i) => { if (l.order !== i) { l.order = i; persist(l.id, true); } });
+    }
+  }
+  /* Puts every picked row, in its current order, where the dragged one was dropped. */
+  function moveGroup(dragId, to) {
+    const list = current();
+    if (list) {
+      const vis = shown(list), dragged = vis.find((i) => i.id === dragId); if (!dragged) return;
+      const listId = list.id, before = list.items.map((i) => Object.assign({}, i));
+      const group = vis.filter((i) => state.picked.has(i.id)), others = vis.filter((i) => !state.picked.has(i.id));
+      const activeOthers = others.filter((i) => !i.done).length;
+      const makeDone = dragged.done ? to >= activeOthers : to > activeOthers;
+      if (group.some((i) => i.done !== makeDone)) feedback(makeDone);
+      group.forEach((i) => { if (i.done !== makeDone) setDone(i, makeDone); });
+      const seq = others.slice(); seq.splice(Math.min(to, seq.length), 0, ...group);
+      list.items = seq.concat(list.items.filter((i) => !vis.includes(i)));
+      persist(list.id);
+      showUndo(() => {
+        const l = state.lists.find((x) => x.id === listId); if (!l) return;
+        l.items = before.map((i) => Object.assign({}, i));
+        persist(listId); render();
+      });
+    } else {
+      const orderBefore = state.lists.map((l) => l.id);
+      const group = state.lists.filter((l) => state.picked.has(l.id)), others = state.lists.filter((l) => !state.picked.has(l.id));
+      others.splice(Math.min(to, others.length), 0, ...group);
+      state.lists = others;
+      state.lists.forEach((l, i) => { if (l.order !== i) { l.order = i; persist(l.id, true); } });
+      showUndo(() => {
+        state.lists.sort((a, b) => orderBefore.indexOf(a.id) - orderBefore.indexOf(b.id));
+        state.lists.forEach((l, i) => { if (l.order !== i) { l.order = i; persist(l.id, true); } });
+        render();
+      });
+    }
+  }
+  function togglePick(id) {
+    if (state.picked.has(id)) state.picked.delete(id); else { state.picked.add(id); anchor = id; }
+    render();
+  }
+  /* Which character of an element's text sits under a tap, so the cursor can go there; null if it cannot be told. */
+  function caretOffset(ev, within) {
+    if (!ev || typeof ev.clientX !== 'number') return null;
+    let node = null, off = 0;
+    try {
+      if (document.caretPositionFromPoint) { const c = document.caretPositionFromPoint(ev.clientX, ev.clientY); if (c) { node = c.offsetNode; off = c.offset; } }
+      else if (document.caretRangeFromPoint) { const r = document.caretRangeFromPoint(ev.clientX, ev.clientY); if (r) { node = r.startContainer; off = r.startOffset; } }
+    } catch (e) {}
+    return node && node.nodeType === 3 && within.contains(node) ? off : null;
+  }
+  /* Keep the row being typed in clear of the on-screen keyboard. When the page is told the keyboard took space
+     (the view shrinks), scroll just enough; when it is not told, assume the keyboard covers roughly the lower 45%. */
+  const coarse = (() => { try { return matchMedia('(pointer: coarse)').matches; } catch (e) { return false; } })();
+  const viewH = () => (window.visualViewport ? window.visualViewport.height : window.innerHeight);
+  let fullH = viewH();             // tallest the view has been, i.e. with no keyboard
+  let kbReported = false;          // once the view has been seen to shrink for the keyboard, it is trusted from then on
+  window.addEventListener('resize', () => { fullH = Math.max(fullH, viewH()); });
+  let typingOff = 0;   // pending end-of-typing cleanup, skipped when the next field is tapped straight away
+  function keepInView(target) {
+    if (!coarse) return;
+    const switching = document.body.classList.contains('typing');
+    clearTimeout(typingOff);
+    if (!switching) fullH = Math.max(fullH, viewH());
+    let shrank = viewH() < fullH - 80;   // the keyboard may already be open from the previous field
+    if (shrank) kbReported = true;
+    document.body.classList.add('typing');
+    /* Moving from one field to the next leaves the button where it is; only a fresh start places it. */
+    if (!switching) document.body.classList.toggle('kb-guess', !kbReported);
+    else if (kbReported) document.body.classList.remove('kb-guess');
+    const fit = () => {
+      if (document.activeElement !== target) return;
+      const vv = window.visualViewport, viewH = vv ? vv.height : window.innerHeight, viewTop = vv ? vv.offsetTop : 0;
+      const r = target.getBoundingClientRect(), roomBottom = shrank ? viewTop + viewH - 16 : viewTop + viewH * 0.55;
+      if (r.bottom > roomBottom) window.scrollBy(0, r.bottom - roomBottom + (shrank ? 0 : 24));
+    };
+    const onResize = () => { if (viewH() < fullH - 80) { shrank = true; kbReported = true; document.body.classList.remove('kb-guess'); fit(); } };
+    (window.visualViewport || window).addEventListener('resize', onResize);
+    if (window.visualViewport) window.addEventListener('resize', onResize);
+    setTimeout(fit, 350); setTimeout(fit, 800);
+    target.addEventListener('blur', () => {
+      (window.visualViewport || window).removeEventListener('resize', onResize);
+      window.removeEventListener('resize', onResize);
+      clearTimeout(typingOff);
+      typingOff = setTimeout(() => { if (!editing) document.body.classList.remove('typing', 'kb-guess'); }, 300);
+    }, { once: true });
+  }
+  /* While text is being typed the round button finishes it, so there is always a clear way to close the keyboard. */
+  function finishMode(on) {
+    const b = $('addBtn');
+    b.classList.toggle('finish', on);
+    b.setAttribute('aria-label', on ? 'Done' : (current() ? 'Add an item' : 'Add a list'));
+  }
+  /* Item text: line breaks are kept (at most one blank line in a row); runs of spaces inside a line become one. */
+  const cleanText = (v) => v.replace(/\r/g, '').split('\n').map((l) => l.replace(/[ \t\u00A0]+/g, ' ').trim()).join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  function startEdit(span, itemId, listId, ev) {
+    const find = () => { const l = state.lists.find((x) => x.id === listId); return l ? l.items.find((i) => i.id === itemId) : null; };
+    const first = find(); if (!first) return;
+    const orig = first.text;
+    const put = (v) => { const it = find(); if (it && v && v !== it.text) { it.text = v; it.changed = Date.now(); persist(listId); } };
+    const commit = () => put(cleanText(span.innerText || span.textContent || '').slice(0, 2000));
+    const at = caretOffset(ev, span);
+    try { span.contentEditable = 'plaintext-only'; } catch (e) { span.contentEditable = 'true'; }
+    editing = true; editingList = listId; activeCommit = commit;
+    span.focus();
+    finishMode(true);
+    keepInView(span);
+    const r = document.createRange(), tn = span.firstChild;
+    if (at != null && tn && tn.nodeType === 3) { r.setStart(tn, Math.min(at, tn.length)); r.collapse(true); }
+    else { r.selectNodeContents(span); r.collapse(false); }
+    const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+    let cancelled = false, t = 0;
+    span.addEventListener('input', () => { clearTimeout(t); t = setTimeout(commit, 500); });
+    span.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { cancelled = true; span.blur(); }
+    });
+    span.addEventListener('blur', () => {
+      clearTimeout(t);
+      if (cancelled) put(orig); else commit();
+      editing = false; activeCommit = null;
+      finishMode(false);
+      span.removeAttribute('contenteditable');
+      const it = find();
+      editingList = null;
+      if (it && !it.text) {            // a new item left blank is dropped
+        const l = state.lists.find((x) => x.id === listId);
+        if (l) l.items = l.items.filter((i) => i.id !== itemId);
+        render();
+      } else if (deferred || !it) render();
+      else { span.textContent = it.text; setTimeout(() => { if (!press && !drag && !editing && !panelOpen) render(); }, 350); }
+    }, { once: true });
+  }
+
+  rowsEl.addEventListener('click', (e) => {
+    if (skipClick) { skipClick = false; e.preventDefault(); return; }
+    const row = e.target.closest('.row');
+    if (!row) return;
+    const id = row.dataset.id;
+    if (state.select) { togglePick(id); return; }
+    const list = current();
+    if (!list) { setView(id); return; }
+    const it = list.items.find((i) => i.id === id);
+    if (!it) return;
+    if (e.target.closest('.check')) {
+      setDone(it, !it.done); feedback(it.done);
+      list.items = list.items.filter((i) => i !== it);
+      if (it.done) list.items.splice(list.items.filter((i) => !i.done).length, 0, it); else list.items.unshift(it);
+      persist(list.id); render(); return;
+    }
+    const span = row.querySelector('.text');
+    if (span && !span.isContentEditable) startEdit(span, it.id, list.id, e);
+  });
+
+  function deleteItem(listId, id) {
+    const l = state.lists.find((x) => x.id === listId); if (!l) return;
+    const idx = l.items.findIndex((i) => i.id === id); if (idx < 0) return;
+    const it = l.items.splice(idx, 1)[0];
+    persist(listId); render();
+    showUndo(() => {
+      const l2 = state.lists.find((x) => x.id === listId);
+      if (!l2 || l2.items.some((i) => i.id === it.id)) return;
+      l2.items.splice(Math.min(idx, l2.items.length), 0, it);
+      l2.items = l2.items.filter((i) => !i.done).concat(l2.items.filter((i) => i.done));
+      persist(listId); render();
+    });
+  }
+  let undoTimer = 0, undoAct = null;
+  function showUndo(act) {
+    undoAct = act; $('toast').hidden = true; $('undoBtn').hidden = false;
+    clearTimeout(undoTimer); undoTimer = setTimeout(hideUndo, settings.undoSeconds * 1000);
+  }
+  function hideUndo() { clearTimeout(undoTimer); undoAct = null; $('undoBtn').hidden = true; }
+  $('undoBtn').addEventListener('click', () => { const act = undoAct; hideUndo(); if (act) act(); });
+  function deleteList(id) {
+    const l = state.lists.find((x) => x.id === id); if (!l) return;
+    state.lists = state.lists.filter((x) => x.id !== id);
+    persist(id, true); render();
+    showUndo(() => {
+      if (state.lists.some((x) => x.id === id)) return;
+      state.lists.push(l); sortLists(); persist(id, true); render();
+    });
+  }
+  function toggleFav(listId, id) {
+    const l = state.lists.find((x) => x.id === listId);
+    const it = l && l.items.find((i) => i.id === id); if (!it) return;
+    it.fav = !it.fav; it.changed = Date.now(); persist(listId); render();
+  }
+
+  /* ---------- gestures on a row: tap, swipe sideways, hold to select, hold then move to reorder ---------- */
+  const liveRow = (id) => [...rowsEl.children].find((r) => r.dataset && r.dataset.id === id) || null;
+  const blurEdit = () => { if (document.activeElement && document.activeElement.isContentEditable) document.activeElement.blur(); };
+  const muteClick = () => { skipClick = true; setTimeout(() => { skipClick = false; }, 80); };
+  function clearPress() {
+    if (!press) return;
+    clearTimeout(press.timer);
+    const r = liveRow(press.id); if (r) r.classList.remove('held', 'swiping', 'settling');
+    press = null;
+  }
+  /* A long press on a row must not open the browser's menu, except in text being edited, where that menu is copy and paste. */
+  rowsEl.addEventListener('contextmenu', (e) => {
+    const t = e.target.nodeType === 1 ? e.target : e.target.parentElement;
+    if (t && t.closest('[contenteditable]')) return;
+    if (t && t.closest('.row')) e.preventDefault();
+  });
+  rowsEl.addEventListener('pointerdown', (e) => {
+    const row = e.target.closest('.row');
+    if (!row || drag || press || e.button > 0 || e.target.isContentEditable) return;
+    const p = { pid: e.pointerId, id: row.dataset.id, x: e.clientX, y: e.clientY, phase: 'wait', dx: 0, w: 0, under: null, timer: 0, mouse: e.pointerType === 'mouse' };
+    if (p.mouse) e.preventDefault();   // a mouse press starts no text selection, so it can drag the row
+    p.timer = setTimeout(() => {
+      if (press !== p || p.phase !== 'wait') return;
+      blurEdit();
+      const r = liveRow(p.id); if (!r) { clearPress(); return; }
+      p.phase = 'held'; r.classList.add('held');
+      try { if (navigator.vibrate) navigator.vibrate(15); } catch (err) {}
+    }, 450);
+    press = p;
+  });
+  /* Once a hold or a sideways swipe has begun, the page must not scroll under the finger. */
+  rowsEl.addEventListener('touchmove', (e) => { if ((drag || (press && press.phase !== 'wait')) && e.cancelable) e.preventDefault(); }, { passive: false });
+  window.addEventListener('scroll', () => { if (press && press.phase === 'wait') clearPress(); }, { passive: true });
+
+  function beginSwipe(p) {
+    clearTimeout(p.timer); blurEdit();
+    const r = liveRow(p.id); if (!r) { clearPress(); return; }
+    p.phase = 'swipe'; p.w = r.offsetWidth; p.starred = !!r.querySelector('.star');
+    const u = el('li', 'under'); u.setAttribute('aria-hidden', 'true'); u.innerHTML = TRASH + STAR;
+    u.style.top = r.offsetTop + 'px'; u.style.height = r.offsetHeight + 'px';
+    rowsEl.appendChild(u); p.under = u;
+    r.classList.add('swiping');
+  }
+  const ARM_AT = 1 / 4, STOP_AT = 1 / 2;   // fractions of the row's width, the same in both directions
+  function moveSwipe(p, dx) {
+    const r = liveRow(p.id); if (!r) return;
+    p.dx = Math.max(current() ? -p.w * STOP_AT : 0, Math.min(p.w * STOP_AT, dx));   // lists only slide right
+    r.style.transform = 'translateX(' + p.dx + 'px)';
+    const armed = Math.abs(p.dx) >= p.w * ARM_AT;
+    p.under.className = 'under ' + (p.dx >= 0 ? 'del' : 'fav' + (p.starred ? ' unfav' : '')) + (armed ? ' armed' : '');
+  }
+  function startDrag(e) {
+    const p = press; clearTimeout(p.timer); press = null;
+    const all = [...rowsEl.querySelectorAll(':scope > .row')];
+    const live = all.find((r) => r.dataset.id === p.id);
+    if (live) live.classList.remove('held');
+    if (!live) return;
+    /* Dragging one of several picked rows carries them all: the others fold into it until the drop. */
+    const group = state.select && state.picked.has(p.id) && state.picked.size > 1;
+    const folded = group ? all.filter((r) => r !== live && state.picked.has(r.dataset.id)) : [];
+    const topBefore = live.getBoundingClientRect().top;
+    folded.forEach((r) => { r.style.display = 'none'; });
+    const fresh = all.filter((r) => !folded.includes(r));
+    if (fresh.length < 2 && !group) return;
+    if (group) { const bd = el('span', 'badge', String(folded.length + 1)); bd.setAttribute('aria-hidden', 'true'); live.appendChild(bd); }
+    const sy = window.scrollY, shift = live.getBoundingClientRect().top - topBefore;
+    drag = {
+      row: live, rows: fresh, idx: fresh.indexOf(live), to: fresh.indexOf(live), pid: p.pid, group, folded,
+      rects: fresh.map((r) => { const b = r.getBoundingClientRect(); return { top: b.top + sy, h: b.height }; }),
+      startPageY: p.y + sy + shift, lastY: e.clientY, raf: 0,
+    };
+    live.classList.add('dragging'); rowsEl.classList.add('sorting');
+    drag.raf = requestAnimationFrame(tick);
+  }
+  function tick() {
+    if (!drag) return;
+    const edge = 96, y = drag.lastY, vh = window.innerHeight;
+    if (y < edge + 40) window.scrollBy(0, -Math.ceil((edge + 40 - y) / 8));
+    else if (y > vh - edge) window.scrollBy(0, Math.ceil((y - (vh - edge)) / 8));
+    place();
+    drag.raf = requestAnimationFrame(tick);
+  }
+  function place() {
+    const d = drag, me = d.rects[d.idx], first = d.rects[0], last = d.rects[d.rects.length - 1];
+    let dy = d.lastY + window.scrollY - d.startPageY;
+    dy = Math.max(first.top - me.top, Math.min(last.top + last.h - me.h - me.top, dy));
+    const top = me.top + dy, bottom = top + me.h;
+    let to = d.idx;
+    d.rows.forEach((r, i) => {
+      if (i === d.idx) return;
+      const mid = d.rects[i].top + d.rects[i].h / 2;
+      let s = 0;
+      if (i < d.idx && top < mid) { s = me.h + 6; to--; }
+      else if (i > d.idx && bottom > mid) { s = -(me.h + 6); to++; }
+      r.style.transform = s ? 'translateY(' + s + 'px)' : '';
+    });
+    d.row.style.transform = 'translateY(' + dy + 'px)';
+    d.to = to;
+  }
+  function endDrag(commit) {
+    if (!drag) return;
+    const d = drag;
+    cancelAnimationFrame(d.raf);
+    rowsEl.classList.remove('sorting');
+    d.rows.forEach((r) => { r.style.transform = ''; });
+    d.row.classList.remove('dragging');
+    d.folded.forEach((r) => { r.style.display = ''; });
+    drag = null;
+    if (commit && d.group) moveGroup(d.row.dataset.id, d.to);
+    else if (commit && d.to !== d.idx) reorder(d.idx, d.to);
+    muteClick();
+    render();
+  }
+  window.addEventListener('pointermove', (e) => {
+    if (drag) { if (e.pointerId === drag.pid) drag.lastY = e.clientY; return; }
+    const p = press; if (!p || e.pointerId !== p.pid) return;
+    const dx = e.clientX - p.x, dy = e.clientY - p.y;
+    if (p.phase === 'wait') {
+      /* With a mouse, dragging straight away moves the row, as on a computer; holding is not needed. */
+      if (p.mouse && Math.abs(dy) > 6 && Math.abs(dy) >= Math.abs(dx)) { clearTimeout(p.timer); blurEdit(); startDrag(e); return; }
+      if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.5 && !state.select && (current() || dx > 0)) beginSwipe(p);
+      else if (Math.abs(dx) > 10 || Math.abs(dy) > 10) clearPress();
+    } else if (p.phase === 'held') {
+      if (Math.abs(dx) > 6 || Math.abs(dy) > 6) startDrag(e);
+    }
+    if (press === p && p.phase === 'swipe') moveSwipe(p, dx);
+  });
+  window.addEventListener('pointerup', (e) => {
+    if (drag) { if (e.pointerId === drag.pid) endDrag(true); return; }
+    const p = press; if (!p || e.pointerId !== p.pid) return;
+    if (p.phase === 'held') {
+      clearPress(); muteClick();
+      /* In selection mode a hold picks everything from the last picked row to this one. */
+      const list = current(), order = (list ? shown(list) : state.lists).map((r) => r.id);
+      const a = order.indexOf(anchor), z = order.indexOf(p.id);
+      if (state.select && a >= 0 && z >= 0 && a !== z && state.picked.has(anchor)) {
+        for (let i = Math.min(a, z); i <= Math.max(a, z); i++) state.picked.add(order[i]);
+      } else state.picked.add(p.id);
+      state.select = true; anchor = p.id;
+      render();
+    } else if (p.phase === 'swipe') {
+      const list = current(), armed = Math.abs(p.dx) >= p.w * ARM_AT, del = armed && p.dx > 0, fav = armed && p.dx < 0;
+      const r = liveRow(p.id);
+      p.phase = 'settle'; muteClick();
+      /* The row finishes its move while the icon keeps the size it had on release. */
+      if (r) { r.classList.add('settling'); r.style.transform = del ? 'translateX(' + (p.w + 24) + 'px)' : ''; }
+      setTimeout(() => {
+        if (press === p) clearPress();
+        if (del && list) deleteItem(list.id, p.id);
+        else if (del && settings.confirmListSwipe) {
+          const l = state.lists.find((x) => x.id === p.id);
+          render();
+          if (l) openPanel({ title: 'Delete \u201C' + l.name + '\u201D?', hint: 'Everything in it is deleted too.', opts: [{ label: 'Delete', danger: true, act: () => deleteList(l.id) }, { label: 'Cancel', act: () => {} }] });
+        }
+        else if (del) deleteList(p.id);
+        else if (list && fav) toggleFav(list.id, p.id);
+        else render();
+      }, 200);
+    } else { clearPress(); if (deferred) render(); }
+  });
+  window.addEventListener('pointercancel', (e) => {
+    if (drag) { if (e.pointerId === drag.pid) endDrag(false); return; }
+    const p = press; if (!p || e.pointerId !== p.pid) return;
+    if (p.phase === 'settle') return;
+    const swiping = p.phase === 'swipe';
+    clearPress();
+    if (swiping || deferred) render();
+  });
+
+  /* ---------- menu, dialogs ---------- */
+  const CONTROLS = new Set(['Close', 'Cancel', 'Return']);   // buttons that only dismiss a dialogue
+  function openPanel(cfg) {
+    const ov = $('overlay'), panel = $('panel');
+    ov.className = cfg.menu ? 'menu' : 'modal' + (cfg.body ? ' wide' : '');
+    panel.textContent = '';
+    panel.setAttribute('aria-label', cfg.title);
+    panel.appendChild(el('p', 'p-title' + (cfg.count ? ' count' : '') + (cfg.plain ? ' plain' : ''), cfg.title));
+    if (cfg.hint) panel.appendChild(el('p', 'p-hint', cfg.hint));
+    if (cfg.body) panel.appendChild(cfg.body);
+    cfg.opts.forEach((o) => {
+      const b = el('button', 'opt' + (o.danger ? ' danger' : '') + (CONTROLS.has(o.label) ? ' ctl' : ''), o.label);
+      b.type = 'button';
+      b.addEventListener('click', () => { closePanel(); o.act(); });
+      panel.appendChild(b);
+    });
+    ov.hidden = false; panelOpen = true;
+    const first = panel.querySelector('.opt'); if (first && !cfg.body) first.focus({ preventScroll: true });
+  }
+  function closePanel() { $('overlay').hidden = true; panelOpen = false; }
+  $('overlay').addEventListener('click', (e) => { if (e.target === $('overlay')) closePanel(); });
+  window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && panelOpen) closePanel(); });
+
+  function deselect() { state.select = false; state.picked.clear(); anchor = null; render(); }
+  /* ---------- info ---------- */
+  const p2 = (n) => String(n).padStart(2, '0');
+  const when = (t, none) => {   // local time, as 2026-05-28 @22:15
+    if (!t) return none;
+    const d = new Date(t);
+    return d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()) + ' @' + p2(d.getHours()) + ':' + p2(d.getMinutes());
+  };
+  function openInfo(at) {
+    const list = current();
+    let subjects, isItem;
+    if (list && state.select) { subjects = list.items.filter((i) => state.picked.has(i.id)); isItem = true; }
+    else if (list) { subjects = [list]; isItem = false; }
+    else { subjects = state.lists.filter((l) => state.picked.has(l.id)); isItem = false; }
+    if (!subjects.length) return;
+    const n = subjects.length, idx = ((at % n) + n) % n, x = subjects[idx];
+    const body = el('div');
+    if (n > 1) {
+      const sub = el('div', 'p-sub');
+      sub.appendChild(el('span', '', (idx + 1) + '/' + n));
+      [['Previous', -1, 'M11 3 5 9l6 6'], ['Next', 1, 'M7 3l6 6-6 6']].forEach(([label, step, d]) => {
+        const b = el('button'); b.type = 'button'; b.setAttribute('aria-label', label);
+        b.innerHTML = '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="' + d + '"/></svg>';
+        b.addEventListener('click', () => openInfo(idx + step));
+        sub.appendChild(b);
+      });
+      body.appendChild(sub);
+    }
+    const dl = el('dl', 'info');
+    const row = (k, v) => { dl.appendChild(el('dt', '', k)); dl.appendChild(el('dd', '', v)); };
+    row('Created', when(x.created, 'Not recorded'));
+    row('Last changed', when(x.changed, x.created ? 'Not changed' : 'Not recorded'));
+    if (isItem) row('Last completed', when(x.completedAt, x.done ? 'Not recorded' : 'Never'));
+    else {
+      const done = x.items.filter((i) => i.done).length;
+      row('Items', x.items.length + (x.items.length ? ' (' + done + ' completed)' : ''));
+    }
+    body.appendChild(dl);
+    const opts = [];
+    opts.push({ label: 'Close', act: () => {} });
+    openPanel({ title: isItem ? '\u201C' + x.text + '\u201D' : x.name, plain: isItem, body, opts });
+  }
+
+  function openMenu() {
+    const list = current(), n = state.picked.size, opts = [];
+    if (state.select) {
+      if (list) {
+        opts.push({ label: 'Move to\u2026', act: () => openDest(false) });
+        opts.push({ label: 'Copy to\u2026', act: () => openDest(true) });
+      }
+      opts.push({ label: 'Info', act: () => openInfo(0) });
+      opts.push({ label: 'Delete', danger: true, act: confirmDelete });
+      opts.push({ label: 'Select All', act: selectAll });
+      opts.push({ label: 'Select None', act: deselect });
+      openPanel({ menu: true, count: true, title: n + ' selected', opts });
+    } else {
+      if (list) {
+        opts.push({ label: 'Info', act: () => openInfo(0) });
+        opts.push({ label: 'Rename list', act: startRename });
+        opts.push({ label: 'Copy list as text', act: () => copyText(listText(list)) });
+        opts.push({ label: 'Save list as a text file', act: () => saveFile(fileName(list.name, 'txt'), listText(list)) });
+      } else {
+        opts.push({ label: 'Import lists', act: openImport });
+        if (state.lists.length) opts.push({ label: 'Save a restore point', act: async () => { toast((await savePoint(false)) ? 'Restore point saved.' : 'The restore point could not be saved. Try again.'); } });
+        if (points.length) opts.push({ label: 'Restore points', act: openPoints });
+        if (state.lists.length) opts.push({ label: 'Back up to a file', act: backupAll });
+      }
+      if ((list ? list.items : state.lists).length) opts.push({ label: 'Select All', act: selectAll });
+      if (!list) {
+        if (state.mode === 'cloud') { opts.push({ label: 'Sync now', act: () => DBX.syncNow() }); opts.push({ label: 'Disconnect Dropbox', act: () => openPanel({ title: 'Disconnect Dropbox?', hint: 'This device keeps a copy of your lists, but stops syncing until you connect again.', opts: [{ label: 'Disconnect', danger: true, act: disconnectDropbox }, { label: 'Cancel', act: () => {} }] }) }); }
+        else opts.push({ label: 'Connect Dropbox', act: () => DBX.signIn() });
+      }
+      opts.push({ label: 'Settings', act: openSettings });
+      openPanel({ menu: true, title: list ? list.name : 'Lists', opts });
+    }
+  }
+  /* ---------- export, backup, import ---------- */
+  function listText(l) { return l.name + '\n\n' + l.items.map((i) => '  ' + (i.done ? '✔ ' : '❏ ') + i.text.split('\n').join('\n      ') + (i.fav ? ' ✭' : '')).join('\n') + '\n'; }
+  function fileName(name, ext) { return (name.replace(/[^\w\- ]+/g, '').trim().slice(0, 60) || 'list') + '.' + ext; }
+  function showText(title, hint, text) {
+    const body = el('div', 'p-body'), ta = el('textarea');
+    ta.id = 'outText'; ta.readOnly = true; ta.value = text; ta.setAttribute('aria-label', title);
+    body.appendChild(ta);
+    openPanel({ title, hint, body, opts: [{ label: 'Close', act: () => {} }] });
+    ta.focus(); ta.select();
+  }
+  function copyText(text) {
+    const fallback = () => showText('Copy this text', 'Copying was blocked here. Select the text below and copy it.', text);
+    try { navigator.clipboard.writeText(text).then(() => toast('Copied.'), fallback); } catch (e) { fallback(); }
+  }
+  function saveFile(filename, text) {
+    try {
+      const url = URL.createObjectURL(new Blob([text], { type: /\.json$/.test(filename) ? 'application/json' : 'text/plain' }));
+      const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+      toast('Saved ' + filename + ' to your downloads.');
+    } catch (e) { showText(filename, 'Saving the file did not work here. Copy the text below and keep it somewhere safe.', text); }
+  }
+  function openSettings() {
+    const body = el('div', 'set'), fields = {};
+    const add = (key, label, type, attrs) => {
+      const row = el('label'), input = el('input');
+      input.id = 'set-' + key; input.type = type;
+      Object.assign(input, attrs || {});
+      if (type === 'checkbox') { input.checked = !!settings[key]; row.appendChild(el('span', '', label)); row.appendChild(input); }
+      else { input.step = '1'; input.inputMode = 'numeric'; input.value = settings[key] ? String(settings[key]) : ''; row.appendChild(el('span', '', label)); row.appendChild(input); }
+      input.addEventListener('change', apply);
+      fields[key] = input; body.appendChild(row);
+    };
+    const apply = () => {
+      const was = settings.starredFirst, next = {};
+      next.theme = settings.theme;
+      Object.keys(fields).forEach((k) => { next[k] = fields[k].type === 'checkbox' ? fields[k].checked : fields[k].value; });
+      settings = normSettings(next);
+      if (settings.starredFirst && !was) state.lists.forEach((l) => { const before = l.items.map((i) => i.id).join(); arrange(l); if (l.items.map((i) => i.id).join() !== before) persist(l.id, true); });
+      saveSettings(); render();
+    };
+    const themeRow = el('div', 'theme-row'), seg = el('div', 'seg');
+    themeRow.appendChild(el('span', '', 'Theme'));
+    [['system', 'System'], ['light', 'Light'], ['dark', 'Dark']].forEach(([v, label]) => {
+      const b = el('button', '', label); b.type = 'button'; b.setAttribute('aria-pressed', String(settings.theme === v));
+      b.addEventListener('click', () => {
+        settings.theme = v; applyTheme(); saveSettings();
+        seg.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      });
+      seg.appendChild(b);
+    });
+    themeRow.appendChild(seg); body.appendChild(themeRow);
+    const devNum = (id, label, note, val, lo, hi, set) => {
+      const l = el('label'), i = el('input'), t = el('span');
+      t.appendChild(document.createTextNode(label));
+      i.id = id; i.type = 'number'; i.min = String(lo); i.max = String(hi); i.step = '1'; i.inputMode = 'numeric'; i.value = String(val);
+      i.addEventListener('change', () => { set(i.value); i.value = String(id === 'set-size' ? textSize : doneLift); });
+      l.appendChild(t); l.appendChild(i); body.appendChild(l);
+    };
+    devNum('set-size', 'App scaling %', 'Makes everything larger or smaller. This device only.', textSize, 70, 160, setSize);
+    devNum('set-lift', 'Raise the \u2713 button while typing, px', 'Use if the button sits too high or low above the keyboard. Negative lowers it. This device only.', doneLift, -300, 300, setLift);
+    add('recentDays', 'Hide completed items after this many days', 'number', { min: '0', max: '3650', placeholder: 'Never' });
+    add('keepStarred', 'Keep starred completed items in view', 'checkbox');
+    add('starredFirst', 'Starred items float to the top', 'checkbox');
+    add('newAtBottom', 'Add new items at the bottom', 'checkbox');
+    add('confirmListSwipe', 'Confirm before deleting a list by swipe', 'checkbox');
+    add('autoPoints', 'Save a restore point automatically each day', 'checkbox');
+    add('keepPoints', 'Restore points to keep', 'number', { min: '1', max: '30' });
+    add('undoSeconds', 'Seconds the UNDO button stays', 'number', { min: '2', max: '60' });
+    add('sound', 'Sound when completing items', 'checkbox');
+    add('soundLevel', 'Sound level %', 'number', { min: '1', max: '100' });
+    add('vibrate', 'Vibrate when completing items', 'checkbox');
+    openPanel({ title: 'Settings', body, opts: [
+      { label: 'Restore defaults', act: () => { const was = settings.starredFirst; settings = Object.assign({}, DEFAULTS); setSize(100); setLift(0); applyTheme(); saveSettings(); render(); openSettings(); toast('Settings restored to defaults.'); } },
+      { label: 'Close', act: apply },
+    ] });
+  }
+  function openPoints() {
+    openPanel({
+      title: 'Restore points',
+      opts: points.map((pt) => ({
+        label: when(pt.savedAt, 'Undated') + ' \u00B7 ' + pt.lists.length + (pt.lists.length === 1 ? ' list' : ' lists') + (pt.auto ? ' \u00B7 auto' : ''),
+        act: () => openPanel({
+          title: 'Restore ' + when(pt.savedAt, 'this point') + '?',
+          hint: 'Each list in it goes back to how it was then, and deleted ones return. Lists created since are kept.',
+          opts: [{ label: 'Restore', act: () => restorePoint(pt) }, { label: 'Cancel', act: () => {} }],
+        }),
+      })).concat([{ label: 'Close', act: () => {} }]),
+    });
+  }
+  function backupAll() {
+    const d = new Date(), pad = (n) => String(n).padStart(2, '0');
+    const stamp = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+    const data = { app: 'lists-backup', version: 1, savedAt: d.toISOString(), lists: state.lists.map((l) => Object.assign({ id: l.id }, body(l))) };
+    saveFile('lists-backup-' + stamp + '.json', JSON.stringify(data, null, 2));
+  }
+  /* Text in the Microsoft To Do "send a copy" shape: a title line, then one item per line, marked open or completed. */
+  function parseLists(text) {
+    const DONE = /^(?:[✔✓✅☑☒]️?|\[[xX]\])\s*/;
+    const OPEN = /^(?:[❏☐□◻◽⬜○◯]️?|\[ ?\]|[-*•])\s+/;
+    const FAV = /\s*✭\s*$/;   // only the outlined star Microsoft To Do appends; any other star is part of the item's text
+    const SEP = /^\s*(?:-{3,}|={3,}|#{3,})\s*$/;   // a line of --- (or === / ###) between lists in a combined paste
+    const rows = text.split(/\r?\n/);
+    const isMarked = (l) => DONE.test(l) || OPEN.test(l);
+    const anyMarked = rows.some((r) => isMarked(r.trim()));
+    const sepMode = rows.some((r) => SEP.test(r));
+    /* Is row k followed by a blank line and then a checked or unchecked item (or the end)? That is how a list name looks. */
+    const looksLikeName = (k) => {
+      let j = k + 1;
+      if (j < rows.length && rows[j].trim()) return false;
+      while (j < rows.length && !rows[j].trim()) j++;
+      return j >= rows.length || isMarked(rows[j].trim());
+    };
+    const out = []; let cur = null, lastItem = null, blank = true, needName = true;
+    const addTo = (it, t) => { const m = t.replace(FAV, ''); if (m !== t) { it.fav = true; t = m; } it.text += '\n' + t; };
+    rows.forEach((raw, k) => {
+      const line = raw.trim();
+      if (sepMode && SEP.test(raw)) { cur = null; lastItem = null; needName = true; blank = true; return; }
+      if (!line && lastItem && /^[ \t]{4,}$/.test(raw)) { lastItem.text += '\n'; return; }   // an indented empty line inside an exported item
+      if (!line) {
+        if (sepMode && lastItem) lastItem.text += '\n';   // a blank line inside an item, kept as a paragraph break
+        else lastItem = null;
+        blank = true; return;
+      }
+      const marked = isMarked(line);
+      if (!marked) {
+        let isName;
+        if (sepMode) {
+          if (needName) isName = true;
+          else if (anyMarked && lastItem) { addTo(lastItem, line); blank = false; return; }
+          else isName = false;
+        } else {
+          /* Extra lines of an item: indented under it (this app's export), or straight after it as Microsoft To Do writes them. */
+          if (lastItem && (/^[ \t]{4,}/.test(raw) || (!blank && anyMarked && !looksLikeName(k)))) { addTo(lastItem, line); blank = false; return; }
+          isName = anyMarked || !cur || (blank && cur.items.length);
+        }
+        if (isName) { cur = { name: line.replace(/\s+/g, ' ').slice(0, 80), items: [] }; out.push(cur); needName = false; lastItem = null; blank = false; return; }
+      }
+      let done = false, t = line;
+      if (DONE.test(line)) { done = true; t = line.replace(DONE, ''); }
+      else if (OPEN.test(line)) t = line.replace(OPEN, '');
+      let fav = false;
+      if (marked) { const m = t.replace(FAV, ''); if (m !== t) { fav = true; t = m; } }
+      if (!t.trim()) { blank = false; return; }
+      if (!cur) { cur = { name: 'Imported list', items: [] }; out.push(cur); needName = false; }
+      lastItem = { id: newId('i'), text: t, done, fav, created: Date.now(), changed: Date.now(), completedAt: 0 };
+      cur.items.push(lastItem);
+      blank = false;
+    });
+    out.forEach((l) => l.items.forEach((i) => { i.text = cleanText(i.text).slice(0, 2000); }));
+    return out.filter((l, n) => l.items.length || l.name !== 'Imported list' || n > 0);
+  }
+  function openImport() {
+    const body = el('div', 'p-body'), ta = el('textarea'), file = el('input');
+    ta.id = 'importText'; ta.setAttribute('aria-label', 'Text to import'); ta.placeholder = 'Groceries\n\n  ❏ Milk\n  ✔ Eggs';
+    file.id = 'importFile'; file.type = 'file'; file.hidden = true; file.tabIndex = -1;
+    file.addEventListener('change', () => {
+      const f = file.files && file.files[0]; if (!f) return;
+      const r = new FileReader();
+      r.onload = () => { ta.value = String(r.result || ''); };
+      r.onerror = () => toast('That file could not be read.');
+      r.readAsText(f);
+    });
+    const pick = el('button', 'chip pick', 'Choose a file'); pick.type = 'button';
+    const picked = el('span', 'pick-name', '');
+    pick.addEventListener('click', () => { try { file.value = ''; file.click(); } catch (e) { toast('This device would not open the file picker. Paste the file\u2019s text instead.'); } });
+    file.addEventListener('change', () => { const f = file.files && file.files[0]; picked.textContent = f ? f.name : ''; });
+    const line = el('div', 'pick-line'); line.appendChild(pick); line.appendChild(picked);
+    body.appendChild(ta); body.appendChild(line); body.appendChild(file);
+    openPanel({
+      title: 'Import lists', body,
+      hint: 'Paste a list exported from Microsoft To Do, or choose a text file or a backup file.',
+      opts: [{ label: 'Import', act: () => doImport(ta.value) }, { label: 'Cancel', act: () => {} }],
+    });
+  }
+  function doImport(text) {
+    if (!text.trim()) { toast('Nothing to import.'); return; }
+    let backup = null;
+    try { const j = JSON.parse(text); if (j && j.app === 'lists-backup' && Array.isArray(j.lists)) backup = j; } catch (e) {}
+    if (backup) {
+      const lists = backup.lists.filter((x) => x && typeof x.id === 'string' && /^[A-Za-z0-9_\-]{1,100}$/.test(x.id)).map((x) => norm(x.id, x));
+      if (!lists.length) { toast('That backup has no lists in it.'); return; }
+      const same = lists.filter((l) => state.lists.some((x) => x.id === l.id)).length;
+      openPanel({
+        title: 'Restore ' + lists.length + (lists.length === 1 ? ' list' : ' lists') + ' from backup?',
+        hint: (same ? same + (same === 1 ? ' of them replaces the current version of the same list. ' : ' of them replace the current versions of the same lists. ') : '') + 'No other lists are changed or deleted.',
+        opts: [{ label: 'Restore', act: () => {
+          lists.forEach((l) => { state.lists = state.lists.filter((x) => x.id !== l.id); state.lists.push(l); persist(l.id, true); });
+          sortLists(); render(); toast('Restored ' + lists.length + (lists.length === 1 ? ' list.' : ' lists.'));
+        } }, { label: 'Cancel', act: () => {} }],
+      });
+      return;
+    }
+    const found = parseLists(text);
+    if (!found.length) { toast('No lists were found in that text.'); return; }
+    let order = state.lists.length ? Math.max(...state.lists.map((x) => x.order)) + 1 : 0;
+    found.forEach((f) => {
+      const l = { id: newId('l'), name: f.name || 'Imported list', order: order++, created: Date.now(), changed: 0, items: f.items.filter((i) => !i.done).concat(f.items.filter((i) => i.done)) };
+      state.lists.push(l); persist(l.id);
+    });
+    render();
+    const n = found.reduce((a, f) => a + f.items.length, 0);
+    toast('Imported ' + found.length + (found.length === 1 ? ' list' : ' lists') + ' with ' + n + (n === 1 ? ' item.' : ' items.'));
+  }
+
+  function selectAll() {
+    const list = current();
+    (list ? shown(list) : state.lists).forEach((r) => state.picked.add(r.id));
+    state.select = state.picked.size > 0;
+    render();
+  }
+  function openDest(copy) {
+    const list = current(); if (!list) return;
+    const others = state.lists.filter((l) => l.id !== list.id);
+    openPanel({
+      title: copy ? 'Copy to' : 'Move to', hint: others.length ? '' : 'There are no other lists yet. Create one from the Lists page first.',
+      opts: others.map((l) => ({ label: l.name, act: () => sendTo(l.id, copy) })).concat([{ label: 'Cancel', act: () => {} }]),
+    });
+  }
+  function sendTo(destId, copy) {
+    const src = current(), dest = state.lists.find((l) => l.id === destId);
+    if (!src || !dest) return;
+    let moving = src.items.filter((i) => state.picked.has(i.id));
+    if (!moving.length) return;
+    if (copy) moving = moving.map((i) => ({ id: newId('i'), text: i.text, done: i.done, fav: !!i.fav, created: Date.now(), changed: Date.now(), completedAt: i.completedAt || 0 }));
+    else src.items = src.items.filter((i) => !state.picked.has(i.id));
+    dest.items = moving.filter((i) => !i.done).concat(dest.items.filter((i) => !i.done), moving.filter((i) => i.done), dest.items.filter((i) => i.done));
+    persist(dest.id); if (!copy) persist(src.id);
+    toast((copy ? 'Copied ' : 'Moved ') + moving.length + (moving.length === 1 ? ' item' : ' items') + ' to ' + dest.name + '.');
+    deselect();
+  }
+  function confirmDelete() {
+    const list = current(), n = state.picked.size; if (!n) return;
+    const noun = list ? (n === 1 ? 'item' : 'items') : (n === 1 ? 'list' : 'lists');
+    openPanel({
+      title: 'Delete ' + n + ' ' + noun + '?', hint: list ? '' : 'Everything in ' + (n === 1 ? 'it' : 'them') + ' is deleted too.',
+      opts: [{ label: 'Delete', danger: true, act: doDelete }, { label: 'Cancel', act: () => {} }],
+    });
+  }
+  function doDelete() {
+    const list = current();
+    if (list) {
+      const listId = list.id, removed = [];
+      list.items.forEach((it, idx) => { if (state.picked.has(it.id)) removed.push({ it, idx }); });
+      if (!removed.length) { deselect(); return; }
+      list.items = list.items.filter((i) => !state.picked.has(i.id));
+      persist(listId);
+      deselect();
+      showUndo(() => {
+        const l = state.lists.find((x) => x.id === listId); if (!l) return;
+        removed.forEach(({ it, idx }) => { if (!l.items.some((i) => i.id === it.id)) l.items.splice(Math.min(idx, l.items.length), 0, it); });
+        l.items = l.items.filter((i) => !i.done).concat(l.items.filter((i) => i.done));
+        persist(listId); render();
+      });
+    } else {
+      const removed = state.lists.filter((l) => state.picked.has(l.id));
+      if (!removed.length) { deselect(); return; }
+      state.lists = state.lists.filter((l) => !state.picked.has(l.id));
+      removed.forEach((l) => persist(l.id, true));
+      deselect();
+      showUndo(() => {
+        removed.forEach((l) => { if (!state.lists.some((x) => x.id === l.id)) { state.lists.push(l); persist(l.id, true); } });
+        sortLists(); render();
+      });
+    }
+  }
+  $('menuBtn').addEventListener('click', openMenu);
+
+  /* ---------- leaving: the back gesture steps out one level; on the main page a second swipe leaves ---------- */
+  let leaveTimer = 0;
+  function arm() { if (armed) return; try { history.pushState({ lists: 1 }, ''); armed = true; } catch (e) {} }
+  window.addEventListener('pointerdown', () => { if (!armed && !exiting) { clearTimeout(leaveTimer); exiting = false; arm(); } }, true);
+  window.addEventListener('popstate', () => {
+    armed = false;
+    if (exiting) return;
+    if (panelOpen) closePanel();
+    else if (editing && document.activeElement) document.activeElement.blur();
+    else if (state.select) deselect();
+    else if (state.view) setView(null);
+    else {
+      /* Nothing left to step out of: the next back swipe is passed on and leaves the app. */
+      exiting = true; toast('Swipe back again to exit.');
+      clearTimeout(leaveTimer); leaveTimer = setTimeout(() => { exiting = false; arm(); }, 3000);
+      return;
+    }
+    arm();
+  });
+
+  /* ---------- bars and title ---------- */
+  $('addBtn').addEventListener('pointerdown', (e) => { if (editing) e.preventDefault(); });   // keep the text focused until the tap lands
+  $('addBtn').addEventListener('mousedown', (e) => { if (editing) e.preventDefault(); });
+  $('addBtn').addEventListener('click', () => {
+    if (editing) { const a = document.activeElement; if (a && (a.isContentEditable || a === titleInput)) a.blur(); return; }
+    const list = current();
+    if (document.activeElement && document.activeElement.isContentEditable) document.activeElement.blur();
+    if (list) {
+      const live = current(); if (!live) return;
+      const it = { id: newId('i'), text: '', done: false, fav: false, created: Date.now(), changed: Date.now(), completedAt: 0 };
+      const open = live.items.filter((i) => !i.done);
+      live.items.splice(settings.newAtBottom ? open.length : settings.starredFirst ? open.filter((i) => i.fav).length : 0, 0, it);
+      render();
+      const row = liveRow(it.id), span = row && row.querySelector('.text');
+      if (row) row.scrollIntoView({ block: 'center' });
+      if (span) startEdit(span, it.id, live.id);
+    } else {
+      const l = { id: newId('l'), name: 'Untitled list', order: 0, created: Date.now(), changed: 0, items: [] };
+      state.lists.unshift(l);
+      state.lists.forEach((x, i) => { if (x.order !== i || x === l) { x.order = i; persist(x.id, true); } });
+      setView(l.id);
+      startRename(true);
+    }
+  });
+  $('back').addEventListener('click', () => setView(null));
+  const titleBtn = $('title'), titleInput = $('titleInput');
+  titleBtn.addEventListener('click', (e) => startRename(false, e));
+  function startRename(blank, ev) {
+    const list = current(); if (!list) return;
+    const at = caretOffset(ev, titleBtn);
+    titleBtn.parentElement.hidden = true; titleInput.hidden = false;
+    titleInput.value = blank ? '' : list.name; titleInput.placeholder = 'List name'; editing = true;
+    titleInput.focus();
+    const pos = at != null ? Math.min(at, titleInput.value.length) : titleInput.value.length;
+    try { titleInput.setSelectionRange(pos, pos); } catch (e) {}
+  }
+  let titleCancelled = false, titleOrig = '', titleTimer = 0;
+  function putTitle(v) { const list = current(); if (list && v && v !== list.name) { list.name = v; persist(list.id); } }
+  const commitTitle = () => putTitle(titleInput.value.replace(/\s+/g, ' ').trim());
+  titleInput.addEventListener('focus', () => { const list = current(); titleOrig = list ? list.name : ''; activeCommit = commitTitle; finishMode(true); keepInView(titleInput); });
+  titleInput.addEventListener('input', () => { clearTimeout(titleTimer); titleTimer = setTimeout(commitTitle, 500); });
+  titleInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); titleInput.blur(); }
+    else if (e.key === 'Escape') { titleCancelled = true; titleInput.blur(); }
+  });
+  titleInput.addEventListener('blur', () => {
+    clearTimeout(titleTimer);
+    finishMode(false);
+    if (titleCancelled) putTitle(titleOrig); else commitTitle();
+    titleCancelled = false; editing = false; activeCommit = null;
+    titleInput.hidden = true; titleBtn.parentElement.hidden = false;
+    render();
+  });
+
+  window.addEventListener('pagehide', flushAll);
+  document.addEventListener('visibilitychange', flushAll);
+  window.addEventListener('online', flushAll);
+
+  render();
+  init();
+})();
+</script>
+
+<script>if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>
+</body>
+</html>
