@@ -607,7 +607,8 @@ body.typing.kb-guess #addBtn { bottom: calc((45vh - 63px + var(--lift, 0px)) / v
       const v = b64url(crypto.getRandomValues(new Uint8Array(48)));
       ls.set(K.verifier, v);
       const ch = b64url(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(v)));
-      const q = new URLSearchParams({ client_id: APP_KEY, response_type: 'code', code_challenge: ch, code_challenge_method: 'S256', redirect_uri: redirectUri(), token_access_type: 'offline' });
+      const q = new URLSearchParams({ client_id: APP_KEY, response_type: 'code', code_challenge: ch, code_challenge_method: 'S256', redirect_uri: redirectUri(), token_access_type: 'offline',
+        scope: 'files.metadata.read files.content.read files.content.write' });   // only file access; no account details
       location.href = 'https://www.dropbox.com/oauth2/authorize?' + q;
     }
     async function tokenCall(params) {
